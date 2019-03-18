@@ -14,7 +14,6 @@ function getUserData() {
         request.get(
             endpoint.getAuthUrl(config.url, config.userId, config.accessToken, config.connectionId, utils.getTs()))
             .on('response', function (response) {
-                // console.log(response.statusCode) // 200
             })
             .on('error', (err) => reject(err))
             .on('data', function (chunk) {
@@ -28,8 +27,12 @@ function getUserData() {
     });
 }
 
+/**
+ * Creates new adv (for now - 1st lvl)
+ * @param site object
+ * @returns {Promise<any>}
+ */
 function generateAdvertisment(site) {
-
     return new Promise((resolve, reject) => {
         request.post(
             endpoint.getAdsPostUrl(config.url, config.userId, site.ad[0].siteId, config.accessToken, config.connectionId, utils.getTs()))
@@ -41,6 +44,10 @@ function generateAdvertisment(site) {
     });
 }
 
+/**
+ * Deletes last adv ( site.ad[2].is - controller)
+ * @param site site object
+ */
 function deleteAdvertisment(site) {
     new Promise((resolve, reject) => {
         request.delete(
@@ -54,6 +61,13 @@ function deleteAdvertisment(site) {
             });
     });
 }
+
+/**
+ * turns on pointed adv
+ * @param site object
+ * @param advNum
+ * @returns {Promise<any>}
+ */
 function enableAdvertisment(site, advNum) {
     return new Promise((resolve, reject) => {
         const reqBody = {
@@ -72,6 +86,11 @@ function enableAdvertisment(site, advNum) {
     });
 }
 
+/**
+ * disables pointed adv
+ * @param site
+ * @param advNum
+ */
 function disableAdvertisment(site, advNum) {
     new Promise((resolve, reject) => {
         request.delete(
@@ -86,6 +105,10 @@ function disableAdvertisment(site, advNum) {
     });
 }
 
+/**
+ * raw example of the enabl-disabl
+ * @returns {Promise<void>}
+ */
 async function disable() {
     try {
         let body = await getUserData();
@@ -98,32 +121,45 @@ async function disable() {
     } catch (e) {
         console.log(e);
     }
-    //run();
- }
-// async function process(site) {
-//     let body = await getUserData();
-//     //console.log(body.sites[0].ad[0]);
-//     generateAdvertisment(site.ad[0]);
-//     await utils.sleep(65000);
-//     body = await getUserData();
-//     // console.log(body.sites[0].ad);
-//     deleteAdvertisment(site.ad[2]);
-//     run();
-// }
-// run();
-async function run() {
+}
+
+// disable();
+
+/**
+ * Recursive! raw example of the create-delete adv for the first site.
+ * @param site
+ * @returns {Promise<void>}
+ */
+async function process(site) {
     let body = await getUserData();
-    for (let i = 0; i < 39; i++) {
+    generateAdvertisment(site.ad[0]);
+    await utils.sleep(65000);
+    body = await getUserData();
+    deleteAdvertisment(site.ad[2]);
+    run();
+}
+
+// process();
+
+/**
+ * Run through N sites to generate and the delete 3rd place adv. 1st lvl.
+ * @returns {Promise<void>}
+ */
+async function run() {
+    const N = 1;
+    let body = await getUserData();
+    for (let i = 0; i < N; i++) {
         generateAdvertisment(body.sites[i]);
     }
     await utils.sleep(65000);
     body = await getUserData();
-    for (let i = 0; i < 39; i++) {
+    for (let i = 0; i < N; i++) {
         deleteAdvertisment(body.sites[i]);
     }
     run();
 }
-// run();
-disable();
+
+run();
+
 
 
