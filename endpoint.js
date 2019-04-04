@@ -4,7 +4,7 @@ module.exports = {
     },
     getAdsPostUrl: function (url, userId, siteId, accessToken, connId, ts) {
         return `${url}/ad_s/ad/${userId}/generateOffers/${siteId}/0?access_token=${accessToken}&connectionId=${connId}&ts=${ts}`;
-        //POST: api/ad_s/ad/USERID/generateOffers/SITEID/0?access_token=TOK&connectionId=CONID&ts=TS
+        //POST: api/ad_s/ad/USERID/generateOffers/SITEID/1?access_token=TOK&connectionId=CONID&ts=TS
     },
     getAdsDeleteUrl: function (url, userId, advId, accessToken, connId, ts) {
         return `${url}/ad_s/${userId}/${advId}/delete?access_token=${accessToken}&connectionId=${connId}&ts=${ts}`;

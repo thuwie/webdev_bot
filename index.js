@@ -1,12 +1,19 @@
 const request = require('request');
 const endpoint = require('./endpoint');
 const utils = require('./utils');
+const logger = require('./logger');
 const config = require('./config.json');
 
 /**
  * Get data from the API
  * @returns {Promise<any>}
  */
+const ignore = [
+    "gearbeast.com", "igrozilla.com", "scihub.edu", "pulse.free", "habr.edu", "flickr.com",
+    "imgur.net", "vock.com", "venuce.free", "spotik.com", "raspberry.com", "ifmo.edu", "cloud.com",
+    "funme.free", "lostlife.free"
+];
+
 function getUserData() {
     return new Promise((resolve, reject) => {
         let body = '';
@@ -32,16 +39,21 @@ function getUserData() {
  * @param site object
  * @returns {Promise<any>}
  */
-function generateAdvertisment(site) {
-    return new Promise((resolve, reject) => {
+async function generateAdvertisment(site) {
+    if (ignore.indexOf(site.domain) === -1) {
         request.post(
             endpoint.getAdsPostUrl(config.url, config.userId, site.ad[0].siteId, config.accessToken, config.connectionId, utils.getTs()))
             .on('response', (response) => {
-                console.log(`Generating adv for the [${site.domain}] - status: ${response.statusCode}`)
+                logger.log(`Generating adv for the [${site.domain}] - status: ${response.statusCode}`)
             })
-            .on('error', (err) => reject(err))
-            .on('end', async () => resolve());
-    });
+            .on('error', (err) => {
+                throw(err);
+            })
+
+            .on('end', async () => {
+                return true;
+            });
+    }
 }
 
 /**
@@ -49,17 +61,19 @@ function generateAdvertisment(site) {
  * @param site site object
  */
 function deleteAdvertisment(site) {
-    new Promise((resolve, reject) => {
+    if (ignore.indexOf(site.domain) === -1) {
         request.delete(
             endpoint.getAdsDeleteUrl(config.url, config.userId, site.ad[2].id, config.accessToken, config.connectionId, utils.getTs()))
             .on('response', (response) => {
-                console.log(`Deleting adv for the [${site.domain}] - status: ${response.statusCode}`)
+                logger.log(`Deleting adv for the [${site.domain}] - status: ${response.statusCode}`)
             })
-            .on('error', (err) => reject(err))
+            .on('error', (err) => {
+                throw (err)
+            })
             .on('end', async () => {
-                return resolve()
+                return true;
             });
-    });
+    }
 }
 
 /**
@@ -79,7 +93,7 @@ function enableAdvertisment(site, advNum) {
             json: true
         };
         request.post(reqBody).on('response', (response) => {
-            console.log(`Enable adv for the [${site.domain}] - status: ${response.statusCode}`)
+            logger.log(`Enable adv for the [${site.domain}] - status: ${response.statusCode}`)
         })
             .on('error', (err) => reject(err))
             .on('end', async () => resolve());
@@ -96,7 +110,7 @@ function disableAdvertisment(site, advNum) {
         request.delete(
             endpoint.getAdsDisableUrl(config.url, config.userId, site.ad[advNum].id, config.accessToken, config.connectionId, utils.getTs()))
             .on('response', (response) => {
-                console.log(`Disable adv for the [${site.domain}] - status: ${response.statusCode}`)
+                logger.log(`Disable adv for the [${site.domain}] - status: ${response.statusCode}`)
             })
             .on('error', (err) => reject(err))
             .on('end', async () => {
@@ -119,7 +133,7 @@ async function disable() {
         // console.log(body.sites[0].ad);
         await disableAdvertisment(body.sites[0], 0);
     } catch (e) {
-        console.log(e);
+        logger.log(e.message, 'ERROR');
     }
 }
 
@@ -146,20 +160,84 @@ async function process(site) {
  * @returns {Promise<void>}
  */
 async function run() {
-    const N = 1;
-    let body = await getUserData();
-    for (let i = 0; i < N; i++) {
-        generateAdvertisment(body.sites[i]);
-    }
-    await utils.sleep(65000);
-    body = await getUserData();
-    for (let i = 0; i < N; i++) {
-        deleteAdvertisment(body.sites[i]);
+
+    try {
+        let body = await getUserData();
+        const N = body.sites.length;
+        for (let i = 0; i < N; i++) {
+            await generateAdvertisment(body.sites[i]);
+        }
+        await utils.sleep(65000);
+        body = await getUserData();
+        for (let i = 0; i < N; i++) {
+            await deleteAdvertisment(body.sites[i]);
+        }
+    } catch (error) {
+        logger.error(error.message);
     }
     run();
 }
 
-run();
+//run();
 
+async function getData(opt) {
+    try {
+        let body = await getUserData();
+        let objArr = utils.getSiteObj(body, opt);
+        return objArr[0];
+    } catch (error) {
+        logger.log(error.message);
+    }
+}
 
+let lastCtrBase = 0;
+let old = [{}, {}, {}];
+
+async function manipulateData() {
+    const obj = await getData({field: 'domain', property: 'moto.free'});
+    let update = obj['ad'];
+    let diffs = [];
+    //logger.log(JSON.stringify(obj.ad[2]));
+    // logger.log("Site money: " + JSON.stringify(obj.sitespeed[obj.sitespeed.length-1].money));
+
+    diffs = utils.compareObj(old, update);
+    diffs.forEach(item => {
+        console.log(item);
+    });
+    await utils.sleep(5000);
+
+    old = update;
+    //display ads info
+    /*obj['ad'].forEach((val, index) => {
+       logger.log(index);
+       console.log('CPC:' + val.cpc);
+       console.log('CtrBase: ' + val.ctrBase);
+       console.log('Money: ' + val.money);
+
+   });*/
+
+    //ctr differences for [0] only
+    /*
+    const ctrBase = obj['ad'][0].ctrBase;
+    const diff = lastCtrBase - ctrBase;
+    logger.log('Current ctrBase: ' + ctrBase);
+    logger.log('Difference between ctrBases: ' + diff);
+    lastCtrBase = ctrBase;
+    */
+
+    //timestamp
+    //logger.log(new Date(obj.sitespeed[obj.sitespeed.length-1].ts).toLocaleString());
+
+logger.log('Breakdown________________');
+    manipulateData();
+}
+
+manipulateData();
+
+//site.sitespeed[last index].money
+//JSON.stringify(obj.sitespeed[obj.sitespeed.length-1])
+
+// 13$ = 240
+// 0 = 252
+// 1.85 = 253
 
