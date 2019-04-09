@@ -28,11 +28,12 @@ function getUserData() {
     });
 }
 
-const siteId = '5cac7b6c4be2846b86228de0';
+const args = process.argv.slice(2);
+console.log(args[0]);
+const siteId = args[0];
 
 async function postLink(site) {
     const url = endpoint.getPostSiteLinkUrl(config.url, config.userId, site.ad[0].siteId, siteId,config.accessToken, config.connectionId, utils.getTs());
-    console.log(url);
     request.post(
         url)
         .on('response', (response) => {
