@@ -17,5 +17,9 @@ module.exports = {
     getAdsDisableUrl: function (url, userId, advId, accessToken, connId, ts) {
         return `${url}/ad_s/${userId}/${advId}/cancel?access_token=${accessToken}&connectionId=${connId}&ts=${ts}`;
         //DELETE: api/ad_s/USERID/ADVID/cancel?access_token=TOK&connectionId=conid&ts=TS
+    },
+    getPostSiteLinkUrl: function(url, userId, targetSideId, postingSiteId, accessToken, connId, ts) {
+        return `${url}/links/${userId}/${targetSideId}/${postingSiteId}/1?access_token=${accessToken}&connectionId=${connId}&ts=${ts}`;
+        //POST :
     }
 };
