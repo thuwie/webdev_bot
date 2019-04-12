@@ -21,5 +21,13 @@ module.exports = {
     getPostSiteLinkUrl: function(url, userId, targetSideId, postingSiteId, accessToken, connId, ts) {
         return `${url}/links/${userId}/${targetSideId}/${postingSiteId}/1?access_token=${accessToken}&connectionId=${connId}&ts=${ts}`;
         //POST :
+    },
+    getPublishFreshContentUrl: function(url, userId, siteId, contentId, accessToken, connId, ts) {        
+        return `${url}/content/${userId}/${siteId}/${contentId}?access_token=${accessToken}&connectionId=${connId}&ts=${ts}`;
+        //POST :
+    },
+    getDeleteSpamUrl: function(url, userId, siteId, accessToken, connId, ts) {        
+        return `${url}/links/${userId}/${siteId}/spam?access_token=${accessToken}&connectionId=${connId}&ts=${ts}`;
+        // DELETE :
     }
 };

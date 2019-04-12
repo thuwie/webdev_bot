@@ -14,5 +14,8 @@
   "dependencies": {
     "moment": "^2.24.0",
     "request": "^2.88.0"
+  },
+  "engines": {
+    "node": "10.15.3"
   }
 }

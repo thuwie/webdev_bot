@@ -1,0 +1,10 @@
+---
+applications:
+- name: wtbot
+  instances: 1
+  memory: 128M
+  disk_quota: 128M
+  health-check-type: process
+  timeout: 60
+  command: node cfRunner.js <USER_ID> <ACCESS_TOKEN> <CONNECTION_ID>
+  buildpack: https://github.com/cloudfoundry/nodejs-buildpack
