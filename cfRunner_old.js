@@ -1,63 +1,19 @@
-const moment = require('moment');
 const endpoint = require('./endpoint');
 const utils = require('./utils');
 const logger = require('./logger');
+const config = require('./config.json');
 
-class CFRunner {
+class CfRunner {
   constructor(config) {
     this.config = config;
   }
 
-  getSafeConfigInfo() {
-    return {
-      username: this.config.username,
-      userId: this.config.userId,
-      lastSuccessful: this.config.lastSuccessful,
-      lastFailed: this.config.lastFailed,
-      error: this.config.error,
-      connectionId: this.config.connectionId,
-    };
-  }
-
-  async scheduleTasks(config, timeout = 1000 * 60 * 5) {
-    this.config = config;
-    this.config.url = 'https://game.web-tycoon.com/api';
-    await this.refresh();
-    if (this.intervalId) {
-      clearInterval(this.intervalId);
-    }
-    logger.log(`Scheduling tasks execution for ${this.config.username} each ${timeout} ms`);
-    await this.runTask();
-    this.intervalId = setInterval(() => {
-      this.runTask();
-    }, timeout);
-  }
-
-  async runTask() {
-    try {
-      logger.log(`Running publish Fresh Content and delete spam tasks for ${this.config.username}`);
-      await this.refresh();
-      await this.publishContent();
-      await this.deleteSpam();
-    } catch (error) {
-      logger.log(`Error: ${error && error.message ? error.message : error}`);
-    }
-  }
-
-  updateConfigLog(error) {
-    if (error) {
-      this.config.error = error;
-      this.config.lastFailed = moment().format('YYYY/MM/DD HH:mm:ss');
-    } else {
-      this.config.error = null;
-      this.config.lastSuccessful = moment().format('YYYY/MM/DD HH:mm:ss');
-    }
+  run() {
+    this.intervalId;
   }
 
   async refresh() {
     this.body = await utils.getUserData();
-    this.config.username = this.body.person.username;
-    this.updateConfigLog();
   }
 
   async publishContent() {
@@ -85,10 +41,7 @@ class CFRunner {
         const url = endpoint.getPublishFreshContentUrl(this.config.url, this.config.userId, site.id, interestedContent.id, this.config.accessToken, this.config.connectionId, utils.getTs());
         const response = await utils.sendPostRequest(url);
         if (response.error) {
-          this.updateConfigLog(response.error);
           logger.log(`Error: ${response.error.statusCode}, ${response.error.message}`);
-        } else {
-          this.updateConfigLog();
         }
         await utils.sleep(1500);
       } catch (error) {
@@ -108,10 +61,7 @@ class CFRunner {
         const url = endpoint.getDeleteSpamUrl(this.config.url, this.config.userId, site.id, this.config.accessToken, this.config.connectionId, utils.getTs());
         const response = await utils.sendDeleteRequest(url);
         if (response.error) {
-          this.updateConfigLog(response.error);
           logger.log(`Error: ${response.error.statusCode}, ${response.error.message}`);
-        } else {
-          this.updateConfigLog();
         }
         await utils.sleep(1500);
       } catch (error) {
@@ -121,6 +71,27 @@ class CFRunner {
   }
 }
 
-module.exports = {
-  CFRunner,
-};
+async function run() {
+  console.log('Starting CF Runner. Lets have fresh content and clean comments forever!');
+  const runner = new CfRunner(config);
+  while (true) {
+    console.log('.');
+    await runner.refresh();
+    await runner.publishContent();
+    await runner.deleteSpam();
+    await utils.sleep(1000 * 60 * 5);
+  }
+}
+
+const args = process.argv.slice(2);
+config.userId = args[0] || config.userId;
+config.accessToken = args[1] || config.accessToken;
+config.connectionId = args[2] || config.connectionId;
+
+run()
+  .then(() => {
+    console.log('Finished');
+  })
+  .catch((err) => {
+    console.log(err);
+  });
