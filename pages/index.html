@@ -60,8 +60,9 @@
     </style>
     <script>
         function getData() {
+            const url = 'http://localhost:8080/info';
             const xmlHttp = new XMLHttpRequest();
-            xmlHttp.open("GET", 'http://localhost:8080/info', false); // false for synchronous request
+            xmlHttp.open("GET", url, false); // false for synchronous request
             xmlHttp.send(null);
             const text = JSON.parse(xmlHttp.responseText);
             let html = "<table id='info' border='1|1'>";
@@ -82,7 +83,7 @@
     </script>
 </head>
 <body onload="getData();">
-<iframe width="0" height="0" border="0" name="dummyframe" id="dummyframe"></iframe>
+<iframe width="0" height="0" border="0" name="dummyframe" id="dummyframe" hidden></iframe>
 <div class="flex">
     <div class="flex-block">
         <form action="/add" target="dummyframe">
