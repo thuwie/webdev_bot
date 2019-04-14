@@ -1,5 +1,5 @@
 const endpoint = require('./endpoint');
-const config = require('./config.json');
+const config = require('../config.json');
 const request = require('request');
 
 module.exports = {

@@ -1,6 +1,6 @@
 const request = require('request');
-const endpoint = require('./endpoint');
-const utils = require('./utils');
+const endpoint = require('./utils/endpoint');
+const utils = require('./utils/utils');
 const logger = require('./logger');
 const config = require('./config.json');
 
