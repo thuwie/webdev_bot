@@ -1,4 +1,5 @@
 const moment = require('moment');
+const request = require('request');
 const endpoint = require('./endpoint');
 const utils = require('./utils');
 const logger = require('./logger');
@@ -6,6 +7,36 @@ const logger = require('./logger');
 class CFRunner {
   constructor(config) {
     this.config = config;
+  }
+
+  /**
+   * Get data from the API
+   * @returns {Promise<any>}
+   */
+  getUserData() {
+    return new Promise((resolve, reject) => {
+      let body = '';
+      let parsedBody = {};
+      request.get(
+        endpoint.getAuthUrl(
+          this.config.url,
+          this.config.userId,
+          this.config.accessToken,
+          this.config.connectionId,
+          utils.getTs()
+        )
+      )
+        .on('response', (response) => {
+        })
+        .on('error', (err) => reject(err))
+        .on('data', (chunk) => {
+          body += chunk;
+        })
+        .on('end', () => {
+          parsedBody = JSON.parse(body);
+          return resolve(parsedBody);
+        });
+    });
   }
 
   getSafeConfigInfo() {
@@ -47,15 +78,17 @@ class CFRunner {
   updateConfigLog(error) {
     if (error) {
       this.config.error = error;
-      this.config.lastFailed = moment().format('YYYY/MM/DD HH:mm:ss');
+      this.config.lastFailed = moment()
+        .format('YYYY/MM/DD HH:mm:ss');
     } else {
       this.config.error = null;
-      this.config.lastSuccessful = moment().format('YYYY/MM/DD HH:mm:ss');
+      this.config.lastSuccessful = moment()
+        .format('YYYY/MM/DD HH:mm:ss');
     }
   }
 
   async refresh() {
-    this.body = await utils.getUserData();
+    this.body = await this.getUserData();
     this.config.username = this.body.person.username;
     this.updateConfigLog();
   }

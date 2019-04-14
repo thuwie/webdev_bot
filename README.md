@@ -17,7 +17,7 @@ F12, Сеть, фильтр по
 ## Добавление таски в бот на CF
 Переходите в браузере по юрл
 ```
-https://wtbot-server.cfapps.eu10.hana.ondemand.com/add?userId=USERID&accessToken=ACCESSTOKEN&connectionId=CONNECTONID
+https://wtbot.cfapps.eu10.hana.ondemand.com/add?userId=USERID&accessToken=ACCESSTOKEN&connectionId=CONNECTONID
 ```
 дополнительным параметром можно указать `&timeout=TIMEOUT_IN_MILLS` таймаут в миллисекундах между реквестами на чистку спама/паблишинг нового контента. По дефолту - 300000, что есть 5 минут. Чаще ставить не советую, вдруг забанят.
 
@@ -27,7 +27,7 @@ https://wtbot-server.cfapps.eu10.hana.ondemand.com/add?userId=USERID&accessToken
 
 переходите в браузере по
 ```
-https://wtbot-server.cfapps.eu10.hana.ondemand.com/info
+https://wtbot.cfapps.eu10.hana.ondemand.com/info
 ```
 все станет понятно
 
@@ -36,7 +36,7 @@ https://wtbot-server.cfapps.eu10.hana.ondemand.com/info
 ## Генерация юрла
 открываете консоль разработчика в хроме на странице с игрой (должны быть залогинены!) и вставляете
 ```
-console.log("https://wtbot-server.cfapps.eu10.hana.ondemand.com/add?userId=" + localStorage.getItem("userId") + "&accessToken=" + localStorage.getItem("token") + "connectionId=")
+console.log("https://wtbot.cfapps.eu10.hana.ondemand.com/add?userId=" + localStorage.getItem("userId") + "&accessToken=" + localStorage.getItem("token") + "connectionId=")
 ```
 (тут надо еще доделать и понять, как программно вытащить connectionId, потому что он не хранится в localStorage)
 Жмякаете энтер, вы в шоколаде, трафик растет, 666_NAGIBATORI_666 в топе всех рейтингов

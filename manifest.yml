@@ -1,9 +1,9 @@
 ---
 applications:
-- name: wtbot-server
+- name: wtbot
   instances: 1
-  memory: 512M
-  disk_quota: 512M
+  memory: 1G
+  disk_quota: 1G
   health-check-type: process
   timeout: 60
   command: node server.js
