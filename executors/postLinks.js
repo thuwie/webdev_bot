@@ -1,8 +1,8 @@
 const request = require('request');
-const endpoint = require('./endpoint');
-const utils = require('./utils');
-const logger = require('./logger');
-const config = require('./config.json');
+const endpoint = require('../endpoint');
+const utils = require('../utils');
+const logger = require('../logger');
+const config = require('../config.json');
 
 /**
  * Get data from the API
