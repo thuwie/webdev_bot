@@ -32,3 +32,13 @@ https://wtbot-server.cfapps.eu10.hana.ondemand.com/info
 все станет понятно
 
 Если токен истек - посылаете новый `/add` запрос, сервер обновит конфиг для вашего userId и автоматически удалит старый шедулинг на выполнение тасок. 
+
+## Генерация юрла
+открываете консоль разработчика в хроме на странице с игрой (должны быть залогинены!) и вставляете
+```
+console.log("https://wtbot-server.cfapps.eu10.hana.ondemand.com/add?userId=" + localStorage.getItem("userId") + "&accessToken=" + localStorage.getItem("token") + "connectionId=")
+```
+(тут надо еще доделать и понять, как программно вытащить connectionId, потому что он не хранится в localStorage)
+Жмякаете энтер, вы в шоколаде, трафик растет, 666_NAGIBATORI_666 в топе всех рейтингов
+
+GL HF
