@@ -1,6 +1,6 @@
 const endpoint = require('./utils/endpoint');
 const utils = require('./utils/utils');
-const logger = require('./logger');
+const logger = require('./utils/logger');
 const config = require('./config.json');
 
 class CfRunner {
