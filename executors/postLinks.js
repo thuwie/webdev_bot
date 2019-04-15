@@ -1,31 +1,22 @@
 const request = require('request');
 const endpoint = require('../utils/endpoint');
 const utils = require('../utils/utils');
-const logger = require('../logger');
+const logger = require('../utils/logger');
 const config = require('../config.json');
+const axios = require('axios');
 
 /**
  * Get data from the API
  * @returns {Promise<any>}
  */
-function getUserData() {
-    return new Promise((resolve, reject) => {
-        let body = '';
-        let parsedBody = {};
-        request.get(
-            endpoint.getAuthUrl(config.url, config.userId, config.accessToken, config.connectionId, utils.getTs()))
-            .on('response', function (response) {
-            })
-            .on('error', (err) => reject(err))
-            .on('data', function (chunk) {
-                body += chunk;
-
-            })
-            .on('end', () => {
-                parsedBody = JSON.parse(body);
-                return resolve(parsedBody);
-            });
-    });
+async function getUserData() {
+    const url = endpoint.getAuthUrl(config.url, config.userId, config.accessToken, config.connectionId, utils.getTs());
+    try {
+        const parsedBody = await axios.get(url);
+        return parsedBody.data;
+    } catch (error) {
+        logger.log(error, 'ERROR');
+    }
 }
 
 const args = process.argv.slice(2);
@@ -33,19 +24,13 @@ console.log(args[0]);
 const siteId = args[0];
 
 async function postLink(site) {
-    const url = endpoint.getPostSiteLinkUrl(config.url, config.userId, site.ad[0].siteId, siteId,config.accessToken, config.connectionId, utils.getTs());
-    request.post(
-        url)
-        .on('response', (response) => {
-            logger.log(`Generating link for the [${site.domain}] - status: ${response.statusCode}`)
-        })
-        .on('error', (err) => {
-            throw(err);
-        })
-
-        .on('end', async () => {
-            return true;
-        });
+    const url = endpoint.getPostSiteLinkUrl(config.url, config.userId, site.ad[0].siteId, siteId, config.accessToken, config.connectionId, utils.getTs());
+    try {
+        const response = await axios.post(url);
+        logger.log(`Post link for the [${site.domain}] - status: ${response.status}`);
+    } catch (error) {
+        logger.log(error, 'ERROR');
+    }
 }
 
 async function run() {
