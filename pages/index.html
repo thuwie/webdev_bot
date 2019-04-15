@@ -24,11 +24,13 @@
         .flex {
             display: flex;
             justify-content: center;
+            margin-bottom: 10vh;
         }
 
         .flex-block {
             margin: 0 10vh;
         }
+
         .info-button {
             background-color: #3c86af;
             border: none;
@@ -66,24 +68,39 @@
             xmlHttp.send(null);
             const text = JSON.parse(xmlHttp.responseText);
             let html = "<table id='info' border='1|1'>";
-            html+="<tr><th>Username</th><th>User ID</th><th>Connection ID</th><th>Last Successful</th><th>Error</th></tr>";
+            html += "<tr><th>Username</th><th>User ID</th><th>Connection ID</th><th>Last Successful</th><th>Error</th></tr>";
             for (let i = 0; i < text.length; i++) {
-                html+="<tr>";
-                html+="<td>"+text[i].username+"</td>";
-                html+="<td>"+text[i].userId+"</td>";
-                html+="<td>"+text[i].connectionId+"</td>";
-                html+="<td>"+text[i].lastSuccessful+"</td>";
-                html+="<td>"+text[i].error+"</td>";
-                html+="</tr>";
+                html += "<tr>";
+                html += "<td>" + text[i].username + "</td>";
+                html += "<td>" + text[i].userId + "</td>";
+                html += "<td>" + text[i].connectionId + "</td>";
+                html += "<td>" + text[i].lastSuccessful + "</td>";
+                html += "<td>" + text[i].error + "</td>";
+                html += "</tr>";
 
             }
-            html+="</table>";
+            html += "</table>";
             document.getElementById('info').innerHTML = html;
+        }
+        function parseData() {
+            const givenUrl = document.getElementById('fullUrl').value;
+            let temp = givenUrl.substring(givenUrl.indexOf('api/')+4);
+            temp = temp.substring(temp.indexOf('/')+1);
+            const userId = temp.substring(0, temp.indexOf('/'));
+            let params = givenUrl.substring(givenUrl.indexOf('?')+1);
+            const paramsArray = params.split('&');
+            const accessToken = paramsArray[0].substring(params.indexOf('=')+1);
+            const connectionId = paramsArray[1].substring(params.indexOf('=')+1);
+            const url = `http://localhost:8080/add?userId=${userId}&accessToken=${accessToken}&connectionId=${connectionId}`;
+            const xmlHttp = new XMLHttpRequest();
+            xmlHttp.open("GET", url, false); // false for synchronous request
+            xmlHttp.send(null);
         }
     </script>
 </head>
 <body onload="getData();">
 <iframe width="0" height="0" border="0" name="dummyframe" id="dummyframe" hidden></iframe>
+
 <div class="flex">
     <div class="flex-block">
         <form action="/add" target="dummyframe">
@@ -100,8 +117,14 @@
             <input type="text" name="timeout" value="300000">
             <br><br>
             <input type="submit" value="Submit">
-        </form>
+        </form><br><br>
+
+        URL: <br>
+        <input id="fullUrl" type="text" name="url" value=""><br><br>
+        <input type="submit" value="Submit" onclick="return parseData();" />
     </div>
+
+
     <div class="flex-block" style="margin-bottom: 10%;">
         <button class="info-button" onclick="getData()">Get Info</button>
         <div id="info">
