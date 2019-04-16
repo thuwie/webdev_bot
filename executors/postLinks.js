@@ -1,16 +1,17 @@
 const request = require('request');
-const endpoint = require('../utils/endpoint');
+const axios = require('axios');
+const endpoint = require('../utils/APIService').APIService;
 const utils = require('../utils/utils');
 const logger = require('../utils/logger');
 const config = require('../config.json');
-const axios = require('axios');
+
 
 /**
  * Get data from the API
  * @returns {Promise<any>}
  */
 async function getUserData() {
-    const url = endpoint.getAuthUrl(config.url, config.userId, config.accessToken, config.connectionId, utils.getTs());
+    const url = endpoint.getAuthUrl(config);
     try {
         const parsedBody = await axios.get(url);
         return parsedBody.data;
@@ -24,7 +25,7 @@ console.log(args[0]);
 const siteId = args[0];
 
 async function postLink(site) {
-    const url = endpoint.getPostSiteLinkUrl(config.url, config.userId, site.ad[0].siteId, siteId, config.accessToken, config.connectionId, utils.getTs());
+    const url = endpoint.getPostSiteLinkUrl(config, site.ad[0].siteId, siteId);
     try {
         const response = await axios.post(url);
         logger.log(`Post link for the [${site.domain}] - status: ${response.status}`);

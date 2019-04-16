@@ -16,6 +16,9 @@
         "max-len": [2, 120],
         "no-await-in-loop": "off",
         "no-console": "off",
-        "no-continue": "off"
+        "no-continue": "off",
+        "no-prototype-builtins": "off",
+        "no-restricted-syntax": "off",
+        "class-methods-use-this": "off"
     }
 }

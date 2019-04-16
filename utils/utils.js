@@ -1,4 +1,4 @@
-const endpoint = require('./endpoint');
+const endpoint = require('./APIService').APIService;
 const config = require('../config.json');
 const request = require('request');
 
@@ -81,7 +81,7 @@ module.exports = {
             let body = '';
             let parsedBody = {};
             request.get(
-                endpoint.getAuthUrl(config.url, config.userId, config.accessToken, config.connectionId, this.getTs())
+                endpoint.getAuthUrl(config)
             )
                 .on('response', function (response) { })
                 .on('error', (err) => reject(err))

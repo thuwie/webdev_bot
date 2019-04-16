@@ -1,5 +1,5 @@
 const request = require('request');
-const endpoint = require('./utils/endpoint');
+const endpoint = require('./utils/APIService').APIService;
 const utils = require('./utils/utils');
 const logger = require('./utils/logger');
 const config = require('./config.json');
@@ -16,7 +16,7 @@ const ignore = [
 ];
 
 async function getUserData() {
-    const url = endpoint.getAuthUrl(config.url, config.userId, config.accessToken, config.connectionId, utils.getTs());
+    const url = endpoint.getAuthUrl(config);
     try {
         const parsedBody = await axios.get(url);
         return parsedBody.data;
@@ -33,7 +33,7 @@ async function getUserData() {
 async function generateAdvertisment(site) {
     if (ignore.indexOf(site.domain) === -1) {
         request.post(
-            endpoint.getAdsPostUrl(config.url, config.userId, site.ad[0].siteId, config.accessToken, config.connectionId, utils.getTs()))
+            endpoint.getAdsPostUrl(config, site.ad[0].siteId)
             .on('response', (response) => {
                 logger.log(`Generating adv for the [${site.domain}] - status: ${response.statusCode}`)
             })
@@ -54,7 +54,7 @@ async function generateAdvertisment(site) {
 function deleteAdvertisment(site) {
     if (ignore.indexOf(site.domain) === -1) {
         request.delete(
-            endpoint.getAdsDeleteUrl(config.url, config.userId, site.ad[2].id, config.accessToken, config.connectionId, utils.getTs()))
+            endpoint.getAdsDeleteUrl(config, site.ad[2].id)
             .on('response', (response) => {
                 logger.log(`Deleting adv for the [${site.domain}] - status: ${response.statusCode}`)
             })
@@ -77,7 +77,7 @@ function enableAdvertisment(site, advNum) {
     return new Promise((resolve, reject) => {
         const reqBody = {
             headers: {'content-type': 'application/json;charset=utf-8'},
-            url: endpoint.getAdsEnableUrl(config.url, config.userId, site.ad[advNum].siteId, config.accessToken, config.connectionId, utils.getTs()),
+            url: endpoint.getAdsEnableUrl(config, site.ad[advNum].siteId),
             body: {
                 adId: site.ad[advNum].id
             },
@@ -99,7 +99,7 @@ function enableAdvertisment(site, advNum) {
 function disableAdvertisment(site, advNum) {
     new Promise((resolve, reject) => {
         request.delete(
-            endpoint.getAdsDisableUrl(config.url, config.userId, site.ad[advNum].id, config.accessToken, config.connectionId, utils.getTs()))
+            endpoint.getAdsDisableUrl(config, site.ad[advNum].id)
             .on('response', (response) => {
                 logger.log(`Disable adv for the [${site.domain}] - status: ${response.statusCode}`)
             })

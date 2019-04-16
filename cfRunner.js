@@ -1,6 +1,7 @@
 const moment = require('moment');
-const request = require('request');
-const endpoint = require('./utils/endpoint');
+const axios = require('axios');
+
+const endpoint = require('./utils/APIService').APIService;
 const utils = require('./utils/utils');
 const logger = require('./utils/logger');
 
@@ -13,30 +14,17 @@ class CFRunner {
    * Get data from the API
    * @returns {Promise<any>}
    */
-  getUserData() {
-    return new Promise((resolve, reject) => {
-      let body = '';
-      let parsedBody = {};
-      request.get(
-        endpoint.getAuthUrl(
-          this.config.url,
-          this.config.userId,
-          this.config.accessToken,
-          this.config.connectionId,
-          utils.getTs()
-        )
-      )
-        .on('response', (response) => {
-        })
-        .on('error', (err) => reject(err))
-        .on('data', (chunk) => {
-          body += chunk;
-        })
-        .on('end', () => {
-          parsedBody = JSON.parse(body);
-          return resolve(parsedBody);
-        });
-    });
+  async getUserData() {
+    const url = endpoint.getAuthUrl(this.config);
+    try {
+      const parsedBody = await axios.get(url);
+      this.updateConfigLog();
+      return parsedBody.data;
+    } catch (error) {
+      this.updateConfigLog(error);
+      logger.log(error, 'ERROR');
+    }
+    return null;
   }
 
   getSafeConfigInfo() {
@@ -70,20 +58,20 @@ class CFRunner {
       await this.refresh();
       await this.publishContent();
       await this.deleteSpam();
+      await this.publishVersions();
     } catch (error) {
       logger.log(`Error: ${error && error.message ? error.message : error}`);
     }
   }
 
   updateConfigLog(error) {
+    const timestamp = moment().format('YYYY/MM/DD HH:mm:ss');
     if (error) {
       this.config.error = error;
-      this.config.lastFailed = moment()
-        .format('YYYY/MM/DD HH:mm:ss');
+      this.config.lastFailed = timestamp;
     } else {
       this.config.error = null;
-      this.config.lastSuccessful = moment()
-        .format('YYYY/MM/DD HH:mm:ss');
+      this.config.lastSuccessful = timestamp;
     }
   }
 
@@ -115,17 +103,14 @@ class CFRunner {
       }
       logger.log(`${new Date()}: processing site ${site.domain}`);
       try {
-        const url = endpoint.getPublishFreshContentUrl(this.config.url, this.config.userId, site.id, interestedContent.id, this.config.accessToken, this.config.connectionId, utils.getTs());
-        const response = await utils.sendPostRequest(url);
-        if (response.error) {
-          this.updateConfigLog(response.error);
-          logger.log(`Error: ${response.error.statusCode}, ${response.error.message}`);
-        } else {
-          this.updateConfigLog();
-        }
+        const url = endpoint.getPublishFreshContentUrl(this.config, site.id, interestedContent.id);
+        await axios.post(url);
+        this.updateConfigLog();
+
         await utils.sleep(1500);
       } catch (error) {
-        logger.log(error.message);
+        this.updateConfigLog(error);
+        logger.log(error, 'ERROR');
       }
     }
   }
@@ -138,18 +123,41 @@ class CFRunner {
       }
       try {
         logger.log(`${new Date()}: Deleting spam from site ${site.domain}`);
-        const url = endpoint.getDeleteSpamUrl(this.config.url, this.config.userId, site.id, this.config.accessToken, this.config.connectionId, utils.getTs());
-        const response = await utils.sendDeleteRequest(url);
-        if (response.error) {
-          this.updateConfigLog(response.error);
-          logger.log(`Error: ${response.error.statusCode}, ${response.error.message}`);
-        } else {
-          this.updateConfigLog();
-        }
+        const url = endpoint.getDeleteSpamUrl(this.config, site.id);
+
+        await axios.delete(url);
+        this.updateConfigLog();
+
         await utils.sleep(1500);
       } catch (error) {
-        logger.log(error.message);
+        this.updateConfigLog(error);
+        logger.log(error, 'ERROR');
       }
+    }
+  }
+
+  isNewVersionReady(site) {
+    const isDesignReady = site.designValue === site.limit.design;
+    const isBackendReady = site.backendValue === site.limit.backend;
+    const isFrontendReady = site.frontendValue === site.limit.frontend;
+    return isDesignReady && isBackendReady && isFrontendReady;
+  }
+
+  async publishVersions() {
+    try {
+      for (const site of this.body.sites) {
+        if (this.isNewVersionReady(site)) {
+          const url = endpoint.getPublishSiteVersionUrl(this.config, site.id);
+          try {
+            const response = await axios.post(url);
+            logger.log(`Publish version for the [${site.domain}] - status: ${response.status}`);
+          } catch (error) {
+            logger.log(error, 'ERROR');
+          }
+        }
+      }
+    } catch (error) {
+      logger.log(error.message);
     }
   }
 }

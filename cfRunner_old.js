@@ -1,4 +1,4 @@
-const endpoint = require('./utils/endpoint');
+const endpoint = require('./utils/APIService').APIService;
 const utils = require('./utils/utils');
 const logger = require('./utils/logger');
 const config = require('./config.json');
@@ -38,7 +38,7 @@ class CfRunner {
       }
       logger.log(`${new Date()}: processing site ${site.domain}`);
       try {
-        const url = endpoint.getPublishFreshContentUrl(this.config.url, this.config.userId, site.id, interestedContent.id, this.config.accessToken, this.config.connectionId, utils.getTs());
+        const url = endpoint.getPublishFreshContentUrl(this.config, site.id, interestedContent.id);
         const response = await utils.sendPostRequest(url);
         if (response.error) {
           logger.log(`Error: ${response.error.statusCode}, ${response.error.message}`);
@@ -58,7 +58,7 @@ class CfRunner {
       }
       try {
         logger.log(`${new Date()}: Deleting spam from site ${site.domain}`);
-        const url = endpoint.getDeleteSpamUrl(this.config.url, this.config.userId, site.id, this.config.accessToken, this.config.connectionId, utils.getTs());
+        const url = endpoint.getDeleteSpamUrl(this.config, site.id);
         const response = await utils.sendDeleteRequest(url);
         if (response.error) {
           logger.log(`Error: ${response.error.statusCode}, ${response.error.message}`);
