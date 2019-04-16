@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Fillform</title>
+    <style>
+        input {
+            width: 100%;
+            padding: 12px 20px;
+            margin: 8px 0;
+            box-sizing: border-box;
+        }
+
+        input[type=button], input[type=submit], input[type=reset] {
+            background-color: #3c86af;
+            border: none;
+            color: white;
+            padding: 16px 32px;
+            text-decoration: none;
+            margin: 4px 2px;
+            cursor: pointer;
+        }
+
+        .flex {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 10vh;
+        }
+
+        .flex-block {
+            margin: 0 10vh;
+        }
+
+        .info-button {
+            background-color: #3c86af;
+            border: none;
+            color: white;
+            padding: 16px 32px;
+            text-decoration: none;
+            margin: 4px 2px;
+            cursor: pointer;
+        }
+
+        #info {
+            font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        #info td, #info th {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+
+        #info th {
+            padding-top: 12px;
+            padding-bottom: 12px;
+            text-align: left;
+            background-color: #3c86af;
+            color: white;
+        }
+    </style>
+    <script>
+        function getData() {
+            const url = 'http://localhost:8080/info';
+            const xmlHttp = new XMLHttpRequest();
+            xmlHttp.open("GET", url, false); // false for synchronous request
+            xmlHttp.send(null);
+            const text = JSON.parse(xmlHttp.responseText);
+            let html = "<table id='info' border='1|1'>";
+            html += "<tr><th>Username</th><th>User ID</th><th>Connection ID</th><th>Last Successful</th><th>Error</th></tr>";
+            for (let i = 0; i < text.length; i++) {
+                html += "<tr>";
+                html += "<td>" + text[i].username + "</td>";
+                html += "<td>" + text[i].userId + "</td>";
+                html += "<td>" + text[i].connectionId + "</td>";
+                html += "<td>" + text[i].lastSuccessful + "</td>";
+                html += "<td>" + text[i].error + "</td>";
+                html += "</tr>";
+
+            }
+            html += "</table>";
+            document.getElementById('info').innerHTML = html;
+        }
+        function parseData() {
+            const givenUrl = document.getElementById('fullUrl').value;
+            let temp = givenUrl.substring(givenUrl.indexOf('api/')+4);
+            temp = temp.substring(temp.indexOf('/')+1);
+            const userId = temp.substring(0, temp.indexOf('/'));
+            let params = givenUrl.substring(givenUrl.indexOf('?')+1);
+            const paramsArray = params.split('&');
+            const accessToken = paramsArray[0].substring(params.indexOf('=')+1);
+            const connectionId = paramsArray[1].substring(params.indexOf('=')+1);
+            const url = `http://localhost:8080/add?userId=${userId}&accessToken=${accessToken}&connectionId=${connectionId}`;
+            const xmlHttp = new XMLHttpRequest();
+            xmlHttp.open("GET", url, false); // false for synchronous request
+            xmlHttp.send(null);
+        }
+    </script>
+</head>
+<body onload="getData();">
+<iframe width="0" height="0" border="0" name="dummyframe" id="dummyframe" hidden></iframe>
+
+<div class="flex">
+    <div class="flex-block">
+        <form action="/add" target="dummyframe">
+            User ID:<br>
+            <input type="text" name="userId" value="">
+            <br>
+            Access Token:<br>
+            <input type="text" name="accessToken" value="">
+            <br>
+            Connection ID:<br>
+            <input type="text" name="connectionId" value="">
+            <br>
+            Timeout(ms):<br>
+            <input type="text" name="timeout" value="300000">
+            <br><br>
+            <input type="submit" value="Submit">
+        </form><br><br>
+
+        URL: <br>
+        <input id="fullUrl" type="text" name="url" value=""><br><br>
+        <input type="submit" value="Submit" onclick="return parseData();" />
+    </div>
+
+
+    <div class="flex-block" style="margin-bottom: 10%;">
+        <button class="info-button" onclick="getData()">Get Info</button>
+        <div id="info">
+        </div>
+    </div>
+</div>
+</body>
+</html>

@@ -1,8 +1,9 @@
 const request = require('request');
-const endpoint = require('./endpoint');
-const utils = require('./utils');
-const logger = require('./logger');
+const endpoint = require('./utils/endpoint');
+const utils = require('./utils/utils');
+const logger = require('./utils/logger');
 const config = require('./config.json');
+const axios = require('axios');
 
 /**
  * Get data from the API
@@ -14,24 +15,14 @@ const ignore = [
     "funme.free", "lostlife.free"
 ];
 
-function getUserData() {
-    return new Promise((resolve, reject) => {
-        let body = '';
-        let parsedBody = {};
-        request.get(
-            endpoint.getAuthUrl(config.url, config.userId, config.accessToken, config.connectionId, utils.getTs()))
-            .on('response', function (response) {
-            })
-            .on('error', (err) => reject(err))
-            .on('data', function (chunk) {
-                body += chunk;
-
-            })
-            .on('end', () => {
-                parsedBody = JSON.parse(body);
-                return resolve(parsedBody);
-            });
-    });
+async function getUserData() {
+    const url = endpoint.getAuthUrl(config.url, config.userId, config.accessToken, config.connectionId, utils.getTs());
+    try {
+        const parsedBody = await axios.get(url);
+        return parsedBody.data;
+    } catch (error) {
+        logger.log(error, 'ERROR');
+    }
 }
 
 /**

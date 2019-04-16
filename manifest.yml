@@ -1,0 +1,10 @@
+---
+applications:
+- name: wtbot
+  instances: 1
+  memory: 1G
+  disk_quota: 1G
+  health-check-type: process
+  timeout: 60
+  command: node server.js
+  buildpack: https://github.com/cloudfoundry/nodejs-buildpack
