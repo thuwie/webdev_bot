@@ -29,5 +29,9 @@ module.exports = {
     getDeleteSpamUrl: function(url, userId, siteId, accessToken, connId, ts) {        
         return `${url}/links/${userId}/${siteId}/spam?access_token=${accessToken}&connectionId=${connId}&ts=${ts}`;
         // DELETE :
+    },
+	getPublishSiteVersionUrl: function(url, userId, siteId, accessToken, connId, ts) {        
+        return `${url}/sites/${userId}/${siteId}/levelUp?access_token=${accessToken}&connectionId=${connId}&ts=${ts}`;
+        // POST :
     }
 };
