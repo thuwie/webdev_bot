@@ -1,7 +1,7 @@
 const express = require('express');
 const path = require('path');
 const {CFRunner} = require('./cfRunner');
-
+const PORT = process.env.PORT || 5000;
 const app = express();
 
 const runners = {};
@@ -53,6 +53,6 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname+'/pages/index.html'));
 });
 
-app.listen(8080, () => {
-    console.log('Started on port 8080!');
+app.listen(PORT, () => {
+    console.log(`Started on port ${PORT}!`);
 });
