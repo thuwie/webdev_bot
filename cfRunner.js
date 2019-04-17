@@ -59,6 +59,7 @@ class CFRunner {
       await this.publishContent();
       await this.deleteSpam();
       await this.publishVersions();
+      await this.workBitches();
     } catch (error) {
       logger.log(`Error: ${error && error.message ? error.message : error}`);
     }
@@ -79,6 +80,49 @@ class CFRunner {
     this.body = await this.getUserData();
     this.config.username = this.body.person.username;
     this.updateConfigLog();
+  }
+
+  async workBitches() {
+    // we need fresh content here
+    this.body = await this.getUserData();
+    const { sites, notifications, tasks, workers } = this.body;
+
+    const sortedSites = sites.sort((site1, site2) => site1.content.length - site2.content.length);
+    let siteIndexGoWork = 0;
+
+    const notificationsMarketingDone = notifications.filter(n => n.action === 'stopWork' && n.data.zone === 'marketing');
+
+    for (const notification of notificationsMarketingDone) {
+      try {
+        const deleteUrl = endpoint.getFinishWorkerTaskForSiteIdUrl(this.config, notification.siteId, notification.workerId);
+        await axios.delete(deleteUrl);
+        this.updateConfigLog();
+        await utils.sleep(1000);
+
+        // TODO
+        // if (worker.tired) {
+        //   go sleep
+        // }
+
+        // yes, I am genius
+        while (tasks.find(task => task.scope === 'marketing' && task.siteId === sortedSites[siteIndexGoWork].id)) {
+          siteIndexGoWork += 1;
+        }
+
+        console.log(`adding worker ${notification.workerId} to site ${sortedSites[siteIndexGoWork].domain}`);
+        const pushUrl = endpoint.getSendWorkerToWork(this.config, sortedSites[siteIndexGoWork].id, 4);
+        await axios.post(pushUrl, {
+          workerIds: [notification.workerId],
+        });
+
+        siteIndexGoWork += 1;
+        this.updateConfigLog();
+        await utils.sleep(1000);
+      } catch (error) {
+        this.updateConfigLog(error);
+        logger.log(error, 'ERROR');
+      }
+    }
   }
 
   async publishContent() {

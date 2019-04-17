@@ -45,8 +45,24 @@ class APIService {
     return `${config.url}/sites/${config.userId}/${siteId}/levelUp?access_token=${config.accessToken}&connectionId=${config.connId}&ts=${ts}`;
     // POST :
   }
+
+  getFinishWorkerTaskForSiteIdUrl(config, siteId, workerId, ts = utils.getTs()) {
+    return `${config.url}/sites/${config.userId}/${siteId}/${workerId}?access_token=${config.accessToken}&connectionId=${config.connId}&ts=${ts}`;
+    // DELETE 
+    // https://game.web-tycoon.com/api/sites/ USER_ID / SITE_ID / <WORKER ID> ?access_token=T&connectionId=C&ts=TS
+  }
+
+  // 4 is marketing
+  // 3 is design
+  // 2 is fronend
+  // 1 backend
+  getSendWorkerToWork(config, siteId, taskTypeId, ts = utils.getTs()) {
+    return `${config.url}/sites/${config.userId}/${siteId}/${taskTypeId}/addTask?access_token=${config.accessToken}&connectionId=${config.connId}&ts=${ts}`;
+  // https://game.web-tycoon.com/api/sites/USERID/SITEID/4/addTask?access_token=T&connectionId=C&ts=T
+  // POST , body: { workersIds: [] }
+  }
 }
 
 module.exports = {
-  APIService
+  APIService: new APIService(),
 };
