@@ -56,17 +56,34 @@ class CFRunner {
     try {
       logger.log(`Running publish Fresh Content and delete spam tasks for ${this.config.username}`);
       await this.refresh();
+    } catch (error) {
+      logger.log(`Error in refresh: ${error && error.message ? error.message : error}`);
+    }
+    try {
       await this.publishContent();
+    } catch (error) {
+      logger.log(`Error in publish content: ${error && error.message ? error.message : error}`);
+    }
+    try {
       await this.deleteSpam();
+    } catch (error) {
+      logger.log(`Error in delete spam: ${error && error.message ? error.message : error}`);
+    }
+    try {
       await this.publishVersions();
+    } catch (error) {
+      logger.log(`Error in publish versions: ${error && error.message ? error.message : error}`);
+    }
+    try {
       await this.workBitches();
     } catch (error) {
-      logger.log(`Error: ${error && error.message ? error.message : error}`);
+      logger.log(`Error in work bitches: ${error && error.message ? error.message : error}`);
     }
   }
 
   updateConfigLog(error) {
-    const timestamp = moment().format('YYYY/MM/DD HH:mm:ss');
+    const timestamp = moment()
+      .format('YYYY/MM/DD HH:mm:ss');
     if (error) {
       this.config.error = error;
       this.config.lastFailed = timestamp;
@@ -85,42 +102,55 @@ class CFRunner {
   async workBitches() {
     // we need fresh content here
     this.body = await this.getUserData();
-    const { sites, notifications, tasks, workers } = this.body;
+    const {
+      sites, tasks, workers,
+    } = this.body;
 
     const sortedSites = sites.sort((site1, site2) => site1.content.length - site2.content.length);
     let siteIndexGoWork = 0;
 
-    const notificationsMarketingDone = notifications.filter(n => n.action === 'stopWork' && n.data.zone === 'marketing');
+    const marketingTasks = tasks.filter(t => t.tasktypeId === 4);
+    for (const task of marketingTasks) {
+      const { siteId } = task;
+      const workerId = task.workers[0];
+      const site = sites.find(currSite => currSite.id === siteId);
+      const countOfPreparedContent = site.content.filter(content => content.status === 1).length;
+      if (countOfPreparedContent === 4) {
+        try {
+          const deleteUrl = endpoint.getFinishWorkerTaskForSiteIdUrl(this.config, siteId, workerId);
+          await axios.delete(deleteUrl);
+          this.updateConfigLog();
+          await utils.sleep(1000);
 
-    for (const notification of notificationsMarketingDone) {
-      try {
-        const deleteUrl = endpoint.getFinishWorkerTaskForSiteIdUrl(this.config, notification.siteId, notification.workerId);
-        await axios.delete(deleteUrl);
-        this.updateConfigLog();
-        await utils.sleep(1000);
+          // const worker = workers.filter(w => w.id === workerId);
+          // if (worker.progress.energy < 5) {
+          //   logger.log(`[${this.config.username}]: Sending worker ${worker.name} to vacation`);
+          //   const goRestUrl = endpoint.getSendWorkerToRest(this.config, workerId);
+          //   await axios.post(goRestUrl);
+          //   continue;
+          // }
 
-        // TODO
-        // if (worker.tired) {
-        //   go sleep
-        // }
+          // yes, I am genius
+          // increment siteIndexGoToWork if on first sites someone already does some work
+          while (tasks.find(task => task.scope === 'marketing' && task.siteId === sortedSites[siteIndexGoWork].id)) {
+            siteIndexGoWork += 1;
+          }
 
-        // yes, I am genius
-        while (tasks.find(task => task.scope === 'marketing' && task.siteId === sortedSites[siteIndexGoWork].id)) {
+          const destSite = sortedSites[siteIndexGoWork];
+
+          console.log(`[${this.config.username}]: adding worker ${workerId} to site ${destSite.domain}`);
+          const pushUrl = endpoint.getSendWorkerToWork(this.config, destSite.id, 4);
+          await axios.post(pushUrl, {
+            workerIds: [workerId],
+          });
+
           siteIndexGoWork += 1;
+          this.updateConfigLog();
+          await utils.sleep(1000);
+        } catch (error) {
+          this.updateConfigLog(error);
+          logger.log(error, 'ERROR');
         }
-
-        console.log(`adding worker ${notification.workerId} to site ${sortedSites[siteIndexGoWork].domain}`);
-        const pushUrl = endpoint.getSendWorkerToWork(this.config, sortedSites[siteIndexGoWork].id, 4);
-        await axios.post(pushUrl, {
-          workerIds: [notification.workerId],
-        });
-
-        siteIndexGoWork += 1;
-        this.updateConfigLog();
-        await utils.sleep(1000);
-      } catch (error) {
-        this.updateConfigLog(error);
-        logger.log(error, 'ERROR');
       }
     }
   }
@@ -141,10 +171,20 @@ class CFRunner {
 
     for (const site of sitesWithoutBuffButWithStoredContent) {
       const lastContent = site.content.find(content => content.status === 2);
-      let interestedContent = site.content.find(content => content.status === 1 && content.contenttypeId !== lastContent.contenttypeId);
-      if (!interestedContent) {
-        interestedContent = site.content.find(content => content.status === 1);
+      const anyContent = site.content.find(content => content.status === 1);
+      let interestedContent;
+
+      if (!lastContent) {
+        interestedContent = anyContent;
+      } else {
+        const goodPotentialContent = site.content.find((content) => {
+          return content.status === 1 && content.contenttypeId !== lastContent.contenttypeId;
+        });
+        if (goodPotentialContent) {
+          interestedContent = goodPotentialContent;
+        }
       }
+
       logger.log(`${new Date()}: processing site ${site.domain}`);
       try {
         const url = endpoint.getPublishFreshContentUrl(this.config, site.id, interestedContent.id);
@@ -190,13 +230,15 @@ class CFRunner {
   async publishVersions() {
     try {
       for (const site of this.body.sites) {
-        if (this.isNewVersionReady(site)) {
-          const url = endpoint.getPublishSiteVersionUrl(this.config, site.id);
-          try {
-            const response = await axios.post(url);
-            logger.log(`Publish version for the [${site.domain}] - status: ${response.status}`);
-          } catch (error) {
-            logger.log(error, 'ERROR');
+        if (this.config.lvlUp && this.config.lvlUp.indexOf(site.domain) >= 0) {
+          if (this.isNewVersionReady(site)) {
+            const url = endpoint.getPublishSiteVersionUrl(this.config, site.id);
+            try {
+              const response = await axios.post(url);
+              logger.log(`Publish version for the [${site.domain}] - status: ${response.status}`);
+            } catch (error) {
+              logger.log(error, 'ERROR');
+            }
           }
         }
       }
@@ -205,6 +247,10 @@ class CFRunner {
     }
   }
 }
+
+const { constConfig } = require('./config');
+
+new CFRunner(constConfig[0]).getUserData();
 
 module.exports = {
   CFRunner,

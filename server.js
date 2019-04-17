@@ -53,6 +53,14 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(`${__dirname }/pages/index.html`));
 });
 
+// init
+const { constConfig } = require('./config');
+
+constConfig.forEach((configFromDefaults) => {
+  runners[configFromDefaults.id] = new CFRunner(configFromDefaults);
+  runners[configFromDefaults.id].scheduleTasks(configFromDefaults, 300000);
+});
+
 app.listen(8080, () => {
   console.log('Started on port 8080!');
 });

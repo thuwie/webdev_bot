@@ -48,7 +48,7 @@ class APIService {
 
   getFinishWorkerTaskForSiteIdUrl(config, siteId, workerId, ts = utils.getTs()) {
     return `${config.url}/sites/${config.userId}/${siteId}/${workerId}?access_token=${config.accessToken}&connectionId=${config.connId}&ts=${ts}`;
-    // DELETE 
+    // DELETE
     // https://game.web-tycoon.com/api/sites/ USER_ID / SITE_ID / <WORKER ID> ?access_token=T&connectionId=C&ts=TS
   }
 
@@ -60,6 +60,12 @@ class APIService {
     return `${config.url}/sites/${config.userId}/${siteId}/${taskTypeId}/addTask?access_token=${config.accessToken}&connectionId=${config.connId}&ts=${ts}`;
   // https://game.web-tycoon.com/api/sites/USERID/SITEID/4/addTask?access_token=T&connectionId=C&ts=T
   // POST , body: { workersIds: [] }
+  }
+
+  getSendWorkerToRest(config, workerId, ts = utils.getTs()) {
+    return `${config.url}/workers/${config.userId}/vacation/send/${workerId}?access_token=${config.accessToken}&connectionId=${config.connId}&ts=${ts}`;
+    // https://game.web-tycoon.com/api/workers/USERID/vacation/send/WORKERID?access_token=A&connectionId=C&ts=T
+    // POST
   }
 }
 
