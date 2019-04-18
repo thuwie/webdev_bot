@@ -67,6 +67,12 @@ class APIService {
     // https://game.web-tycoon.com/api/workers/USERID/vacation/send/WORKERID?access_token=A&connectionId=C&ts=T
     // POST
   }
+
+  getCancelRestUrl(config, workerId, taskId, ts = utils.getTs()) {
+    return `${config.url}/tasks/${config.userId}/${taskId}/${workerId}/cancelVacation?access_token=${config.accessToken}&connectionId=${config.connId}&ts=${ts}`;
+    // https://game.web-tycoon.com/api/tasks/UID/TASKID/WORKERID/cancelVacation?access_token=A&connectionId=C&ts=T
+    // POST
+  }
 }
 
 module.exports = {

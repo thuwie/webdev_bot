@@ -41,16 +41,14 @@ app.get('/add', (req, res) => {
 
 app.get('/info', (req, res) => {
   const configs = [];
-  for (const config in runners) {
-    if (runners.hasOwnProperty(config)) {
-      configs.push(runners[config].getSafeConfigInfo());
-    }
+  for (const config of runners) {
+    configs.push(runners[config].getSafeConfigInfo());
   }
   res.send(configs);
 });
 
 app.get('/', (req, res) => {
-  res.sendFile(path.join(`${__dirname }/pages/index.html`));
+  res.sendFile(path.join(`${__dirname}/pages/index.html`));
 });
 
 // init

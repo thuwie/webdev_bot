@@ -99,6 +99,65 @@ class CFRunner {
     this.updateConfigLog();
   }
 
+  async getFromRest(worker, task) {
+    try {
+      const getCancelVacationUrl = endpoint.getCancelRestUrl(this.config, worker.id, task.id);
+      await axios.post(getCancelVacationUrl);
+      this.updateConfigLog();
+      await utils.sleep(1000);
+    } catch (error) {
+      logger.log(`[${this.config.username}]: failed to get back from vacation worker ${worker.name}`);
+      this.updateConfigLog(error);
+      logger.log(error, 'ERROR');
+      throw error;
+    }
+  }
+
+  async goToRest(worker) {
+    try {
+      logger.log(`[${this.config.username}]: Sending worker ${worker.name} to vacation`);
+      const goRestUrl = endpoint.getSendWorkerToRest(this.config, worker.id);
+      await axios.post(goRestUrl);
+    } catch (error) {
+      logger.log(`[${this.config.username}]: failed to send worker ${worker.name} to vacation`, 'ERROR');
+      this.updateConfigLog(error);
+      logger.log(error, 'ERROR');
+      throw error;
+    }
+  }
+
+  async goToWork(sitesWithFreePlaceForContentWitoutWorkers, worker) {
+    const destSite = sitesWithFreePlaceForContentWitoutWorkers[0];
+
+    if (!destSite) {
+      logger.log(`[${this.config.username}]: no sites with free slots for work left! ${worker.name} goes to vacation`);
+      await this.goToRest(worker);
+      return;
+    }
+
+    try {
+      logger.log(`[${this.config.username}]: adding worker ${worker.name} to site ${destSite.domain}`);
+      const pushUrl = endpoint.getSendWorkerToWork(this.config, destSite.id, 4);
+      await axios.post(pushUrl, {
+        workerIds: [worker.id],
+      });
+
+      // remove first element from array if everything is ok
+      sitesWithFreePlaceForContentWitoutWorkers.shift();
+      this.updateConfigLog();
+      await utils.sleep(1000);
+    } catch (error) {
+      logger.log(`[${this.config.username}]: failed to send worker ${worker.name} to site ${destSite.domain}`, 'ERROR');
+      this.updateConfigLog(error);
+      logger.log(error, 'ERROR');
+      throw error;
+    }
+  }
+
+  async goToWorkOrRest(sitesWithFreePlaceForContentWitoutWorkers, worker) {
+
+  }
+
   async workBitches() {
     // we need fresh content here
     this.body = await this.getUserData();
@@ -106,80 +165,139 @@ class CFRunner {
       sites, tasks, workers,
     } = this.body;
 
-    const sortedSites = sites.sort((site1, site2) => site1.content.length - site2.content.length);
-    let siteIndexGoWork = 0;
+    const sitesWithFreePlaceForContentWithoutWorkers = sites
+      .filter(site => site.content.filter(content => content.status === 1).length < 4)
+      .filter((site) => {
+        const taskForSite = tasks.find(task => task.scope === 'marketing' && (task.siteId === site.id));
+        return taskForSite === undefined;
+      })
+      .filter(site => site.level > 0)
+      .sort((site1, site2) => site1.content.length - site2.content.length);
 
-    const marketingTasks = tasks.filter(t => t.tasktypeId === 4);
-    for (const task of marketingTasks) {
-      const { siteId } = task;
-      const workerId = task.workers[0];
-      const site = sites.find(currSite => currSite && (currSite.id === siteId));
-      const countOfPreparedContent = site.content.filter(content => content.status === 1).length;
-      if (countOfPreparedContent === 4) {
-        try {
-          const deleteUrl = endpoint.getFinishWorkerTaskForSiteIdUrl(this.config, siteId, workerId);
-          await axios.delete(deleteUrl);
-          this.updateConfigLog();
-          await utils.sleep(1000);
+    const marketingWorkers = workers
+      .filter((worker) => {
+        const { progress } = worker;
+        const mScore = progress.marketing;
+        return mScore >= progress.backend && mScore >= progress.design && mScore >= progress.frontend;
+      });
 
-          const worker = workers.find(w => w.id === workerId);
-          if (!worker) {
-            logger.log(`[${this.config.username}]: Can't find worker ${workerId} in list of workers... Strange.. just skip him`);
+    for (const worker of marketingWorkers) {
+      try {
+        const workerTask = tasks.find(task => task.workers[0] === worker.id);
+        if (!workerTask) {
+          // no tasks - go to work! (if not tired xd)
+          await this.goToWorkOrRest(sitesWithFreePlaceForContentWithoutWorkers, worker);
+          continue;
+        } else if (workerTask.zone === 'vacation') {
+          if (worker.progress.energy > 95
+            && sitesWithFreePlaceForContentWithoutWorkers.length > 0) {
+            await this.getFromRest(worker, workerTask);
+            await utils.sleep(500);
+            await this.goToWork(sitesWithFreePlaceForContentWithoutWorkers, worker);
+            continue;
+          } else {
+            logger.log(`[${this.config.username}]: ${worker.name} has a rest and energy is ${worker.progress.energy}. Don't touch him`);
             continue;
           }
-
-          if (worker.progress.energy < 5) {
-            logger.log(`[${this.config.username}]: Sending worker ${worker.name} to vacation`);
-            const goRestUrl = endpoint.getSendWorkerToRest(this.config, workerId);
-            await axios.post(goRestUrl);
-            continue;
-          }
-
-          // yes, I am genius
-          // increment siteIndexGoToWork if on first sites someone already does some work
-          while (tasks.find((task) => {
-            return task.scope === 'marketing'
-              && sortedSites[siteIndexGoWork]
-              && (task.siteId === sortedSites[siteIndexGoWork].id)
-              && sortedSites[siteIndexGoWork].level < 1
-          })) {
-            siteIndexGoWork += 1;
-          }
-
-          const destSite = sortedSites[siteIndexGoWork];
-
-          if (!destSite) {
-            logger.log(`[${this.config.username}]: all sites are busy with CMs! so worker ${workerId} is just chilling`);
-          }
-
-          if (destSite.content.filter(content => content.status === 1).length === 4) {
-            logger.log(`[${this.config.username}]: all sites are full or in progress! so worker ${workerId} is just chilling`);
+        } else if (workerTask.zone === 'marketing') {
+          const { siteId } = workerTask;
+          const site = sites.find(currSite => currSite && (currSite.id === siteId));
+          const countOfPreparedContent = site.content.filter(content => content.status === 1).length;
+          if (countOfPreparedContent === 4) {
             try {
-              const goRestUrl = endpoint.getSendWorkerToRest(this.config, workerId);
-              await axios.post(goRestUrl);
+              const deleteUrl = endpoint.getFinishWorkerTaskForSiteIdUrl(this.config, siteId, worker.id);
+              await axios.delete(deleteUrl);
+              this.updateConfigLog();
+              await utils.sleep(1000);
             } catch (error) {
-              logger.log(`[${this.config.username}]: failed to send worker ${workerId} to rest`, 'ERROR');
+              logger.log(`[${this.config.username}]: failed to get ${worker.name} back from task on site ${site.domain}`);
               this.updateConfigLog(error);
               logger.log(error, 'ERROR');
             }
-            continue;
+
+            await this.goToWorkOrRest(sitesWithFreePlaceForContentWithoutWorkers, worker);
           }
-
-          logger.log(`[${this.config.username}]: adding worker ${workerId} to site ${destSite.domain}`);
-          const pushUrl = endpoint.getSendWorkerToWork(this.config, destSite.id, 4);
-          await axios.post(pushUrl, {
-            workerIds: [workerId],
-          });
-
-          siteIndexGoWork += 1;
-          this.updateConfigLog();
-          await utils.sleep(1000);
-        } catch (error) {
-          this.updateConfigLog(error);
-          logger.log(error, 'ERROR');
+        } else {
+          logger.log(`[${this.config.username}]: i dont know what to do with ${worker.name}`);
+          continue;
         }
+      } catch (error) {
+        logger.log(`[${this.config.username}]: failed handle worker ${worker.name}`);
+        logger.log(error, 'ERROR');
       }
+
+      // go to work
     }
+
+    // const marketingTasks = tasks.filter(t => t.tasktypeId === 4);
+    // for (const task of marketingTasks) {
+    //   const { siteId } = task;
+    //   const workerId = task.workers[0];
+    //   const site = sites.find(currSite => currSite && (currSite.id === siteId));
+    //   const countOfPreparedContent = site.content.filter(content => content.status === 1).length;
+    //   if (countOfPreparedContent === 4) {
+    //     try {
+    //       const deleteUrl = endpoint.getFinishWorkerTaskForSiteIdUrl(this.config, siteId, workerId);
+    //       await axios.delete(deleteUrl);
+    //       this.updateConfigLog();
+    //       await utils.sleep(1000);
+    //
+    //       const worker = workers.find(w => w.id === workerId);
+    //       if (!worker) {
+    //         logger.log(`[${this.config.username}]: Can't find worker ${workerId} in list of workers... Strange.. just skip him`);
+    //         continue;
+    //       }
+    //
+    //       if (worker.progress.energy < 5) {
+    //         logger.log(`[${this.config.username}]: Sending worker ${worker.name} to vacation`);
+    //         const goRestUrl = endpoint.getSendWorkerToRest(this.config, workerId);
+    //         await axios.post(goRestUrl);
+    //         continue;
+    //       }
+    //
+    //       // yes, I am genius
+    //       // increment siteIndexGoToWork if on first sites someone already does some work
+    //       while (tasks.find(task => task.scope === 'marketing'
+    //           && sortedSites[siteIndexGoWork]
+    //           && (task.siteId === sortedSites[siteIndexGoWork].id)
+    //           && sortedSites[siteIndexGoWork].level < 1)) {
+    //         siteIndexGoWork += 1;
+    //       }
+    //
+    //       const destSite = sortedSites[siteIndexGoWork];
+    //
+    //       if (!destSite) {
+    //         logger.log(`[${this.config.username}]: all sites are busy with CMs! so worker ${workerId} is just chilling`);
+    //       }
+    //
+    //       if (destSite.content.filter(content => content.status === 1).length === 4) {
+    //         logger.log(`[${this.config.username}]: all sites are full or in progress! so worker ${workerId} is just chilling`);
+    //         try {
+    //           const goRestUrl = endpoint.getSendWorkerToRest(this.config, workerId);
+    //           await axios.post(goRestUrl);
+    //         } catch (error) {
+    //           logger.log(`[${this.config.username}]: failed to send worker ${workerId} to rest`, 'ERROR');
+    //           this.updateConfigLog(error);
+    //           logger.log(error, 'ERROR');
+    //         }
+    //         continue;
+    //       }
+    //
+    //       logger.log(`[${this.config.username}]: adding worker ${workerId} to site ${destSite.domain}`);
+    //       const pushUrl = endpoint.getSendWorkerToWork(this.config, destSite.id, 4);
+    //       await axios.post(pushUrl, {
+    //         workerIds: [workerId],
+    //       });
+    //
+    //       siteIndexGoWork += 1;
+    //       this.updateConfigLog();
+    //       await utils.sleep(1000);
+    //     } catch (error) {
+    //       this.updateConfigLog(error);
+    //       logger.log(error, 'ERROR');
+    //     }
+    //   }
+    // }
   }
 
   async publishContent() {
@@ -200,11 +318,11 @@ class CFRunner {
       const lastContent = site.content.find(content => content.status === 2);
       let interestedContent = site.content.find(content => content.status === 1);
 
-      const goodPotentialContent = site.content.find((content) => {
-        return content.status === 1 && content.contenttypeId !== lastContent.contenttypeId;
-      });
-      if (goodPotentialContent) {
-        interestedContent = goodPotentialContent;
+      if (lastContent) {
+        const goodPotentialContent = site.content.find(content => content.status === 1 && content.contenttypeId !== lastContent.contenttypeId);
+        if (goodPotentialContent) {
+          interestedContent = goodPotentialContent;
+        }
       }
 
       logger.log(`[${this.config.username}]: processing site ${site.domain}`);
