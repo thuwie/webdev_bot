@@ -154,8 +154,12 @@ class CFRunner {
     }
   }
 
-  async goToWorkOrRest(sitesWithFreePlaceForContentWitoutWorkers, worker) {
-
+  async goToWorkOrRest(sitesWithFreePlaceForContentWithoutWorkers, worker) {
+    if (worker.progress.energy < 20) {
+      await this.goToRest(worker);
+    } else {
+      await this.goToWork(sitesWithFreePlaceForContentWithoutWorkers, worker);
+    }
   }
 
   async workBitches() {
@@ -189,8 +193,7 @@ class CFRunner {
           await this.goToWorkOrRest(sitesWithFreePlaceForContentWithoutWorkers, worker);
           continue;
         } else if (workerTask.zone === 'vacation') {
-          if (worker.progress.energy > 95
-            && sitesWithFreePlaceForContentWithoutWorkers.length > 0) {
+          if (worker.progress.energy > 95 && sitesWithFreePlaceForContentWithoutWorkers.length > 0) {
             await this.getFromRest(worker, workerTask);
             await utils.sleep(500);
             await this.goToWork(sitesWithFreePlaceForContentWithoutWorkers, worker);

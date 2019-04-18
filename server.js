@@ -53,7 +53,6 @@ app.get('/', (req, res) => {
 const { constConfigs } = require('./config.json');
 
 for (const config of constConfigs) {
-  console.log(config);
   runners[config.userId] = new CFRunner(config);
   runners[config.userId].scheduleTasks(config, 300000);
 }
