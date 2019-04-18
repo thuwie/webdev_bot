@@ -180,14 +180,15 @@ class CFRunner {
 
     const marketingWorkers = workers
       .filter((worker) => {
-        const { progress } = worker;
-        const mScore = progress.marketing;
-        return mScore >= progress.backend && mScore >= progress.design && mScore >= progress.frontend;
+        const {
+          marketing, design, frontend, backend,
+        } = worker;
+        return marketing >= backend && marketing >= design && marketing >= frontend;
       });
 
     for (const worker of marketingWorkers) {
       try {
-        const workerTask = tasks.find(task => task.workers[0] === worker.id);
+        const workerTask = tasks.find(task => task.workers && (task.workers[0] === worker.id));
         if (!workerTask) {
           // no tasks - go to work! (if not tired xd)
           await this.goToWorkOrRest(sitesWithFreePlaceForContentWithoutWorkers, worker);
@@ -208,6 +209,7 @@ class CFRunner {
           const countOfPreparedContent = site.content.filter(content => content.status === 1).length;
           if (countOfPreparedContent === 4) {
             try {
+              console.log(`[${this.config.username}]: getting ${worker.name} back from task on site ${site.domain}`);
               const deleteUrl = endpoint.getFinishWorkerTaskForSiteIdUrl(this.config, siteId, worker.id);
               await axios.delete(deleteUrl);
               this.updateConfigLog();
@@ -391,6 +393,11 @@ class CFRunner {
     }
   }
 }
+
+// const { constConfigs } = require('./config.json');
+// const config = constConfigs[1];
+//
+// new CFRunner(config).scheduleTasks(config, 300000);
 
 module.exports = {
   CFRunner,
