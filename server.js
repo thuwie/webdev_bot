@@ -23,13 +23,8 @@ app.get('/add', (req, res) => {
     connectionId,
   };
 
-  let currRunner = runners[userId];
-  if (!currRunner) {
-    currRunner = new CFRunner(currConfig);
-  }
-
-  runners[userId] = currRunner;
-  currRunner.scheduleTasks(currConfig, timeout)
+  runners[userId] = new CFRunner(currConfig);;
+  runners[userId].scheduleTasks(currConfig, timeout)
     .then(() => {
       res.send('Hello World!');
     })
@@ -41,10 +36,13 @@ app.get('/add', (req, res) => {
 
 app.get('/info', (req, res) => {
   const configs = [];
-  for (const config of runners) {
-    configs.push(runners[config].getSafeConfigInfo());
+  for (const config in runners) {
+    if (runners.hasOwnProperty(config)) {
+      configs.push(runners[config].getSafeConfigInfo());
+    }
   }
   res.send(configs);
+  // res.send(runners);
 });
 
 app.get('/', (req, res) => {
@@ -54,10 +52,11 @@ app.get('/', (req, res) => {
 // init
 const { constConfigs } = require('./config.json');
 
-constConfigs.forEach((configFromDefaults) => {
-  runners[configFromDefaults.id] = new CFRunner(configFromDefaults);
-  runners[configFromDefaults.id].scheduleTasks(configFromDefaults, 300000);
-});
+for (const config of constConfigs) {
+  console.log(config);
+  runners[config.userId] = new CFRunner(config);
+  runners[config.userId].scheduleTasks(config, 300000);
+}
 
 app.listen(8080, () => {
   console.log('Started on port 8080!');
