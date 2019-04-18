@@ -54,9 +54,9 @@ app.get('/', (req, res) => {
 });
 
 // init
-const { constConfig } = require('./config');
+const { constConfigs } = require('./config.json');
 
-constConfig.forEach((configFromDefaults) => {
+constConfigs.forEach((configFromDefaults) => {
   runners[configFromDefaults.id] = new CFRunner(configFromDefaults);
   runners[configFromDefaults.id].scheduleTasks(configFromDefaults, 300000);
 });

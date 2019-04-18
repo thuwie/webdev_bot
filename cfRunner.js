@@ -45,7 +45,7 @@ class CFRunner {
     if (this.intervalId) {
       clearInterval(this.intervalId);
     }
-    logger.log(`Scheduling tasks execution for ${this.config.username} each ${timeout} ms`);
+    logger.log(`[${this.config.username}]: Scheduling tasks execution for ${this.config.username} each ${timeout} ms`);
     await this.runTask();
     this.intervalId = setInterval(() => {
       this.runTask();
@@ -54,30 +54,30 @@ class CFRunner {
 
   async runTask() {
     try {
-      logger.log(`Running publish Fresh Content and delete spam tasks for ${this.config.username}`);
+      logger.log(`Running all tasks ${this.config.username}`);
       await this.refresh();
     } catch (error) {
-      logger.log(`Error in refresh: ${error && error.message ? error.message : error}`);
+      logger.log(`[${this.config.username}]: Error in refresh: ${error && error.message ? error.message : error}`);
     }
     try {
       await this.publishContent();
     } catch (error) {
-      logger.log(`Error in publish content: ${error && error.message ? error.message : error}`);
+      logger.log(`[${this.config.username}]: Error in publish content: ${error && error.message ? error.message : error}`);
     }
     try {
       await this.deleteSpam();
     } catch (error) {
-      logger.log(`Error in delete spam: ${error && error.message ? error.message : error}`);
+      logger.log(`[${this.config.username}]: Error in delete spam: ${error && error.message ? error.message : error}`);
     }
     try {
       await this.publishVersions();
     } catch (error) {
-      logger.log(`Error in publish versions: ${error && error.message ? error.message : error}`);
+      logger.log(`[${this.config.username}]: Error in publish versions: ${error && error.message ? error.message : error}`);
     }
     try {
       await this.workBitches();
     } catch (error) {
-      logger.log(`Error in work bitches: ${error && error.message ? error.message : error}`);
+      logger.log(`[${this.config.username}]: Error in work bitches: ${error && error.message ? error.message : error}`);
     }
   }
 
@@ -113,7 +113,7 @@ class CFRunner {
     for (const task of marketingTasks) {
       const { siteId } = task;
       const workerId = task.workers[0];
-      const site = sites.find(currSite => currSite.id === siteId);
+      const site = sites.find(currSite => currSite && (currSite.id === siteId));
       const countOfPreparedContent = site.content.filter(content => content.status === 1).length;
       if (countOfPreparedContent === 4) {
         try {
@@ -122,23 +122,50 @@ class CFRunner {
           this.updateConfigLog();
           await utils.sleep(1000);
 
-          // const worker = workers.filter(w => w.id === workerId);
-          // if (worker.progress.energy < 5) {
-          //   logger.log(`[${this.config.username}]: Sending worker ${worker.name} to vacation`);
-          //   const goRestUrl = endpoint.getSendWorkerToRest(this.config, workerId);
-          //   await axios.post(goRestUrl);
-          //   continue;
-          // }
+          const worker = workers.find(w => w.id === workerId);
+          if (!worker) {
+            logger.log(`[${this.config.username}]: Can't find worker ${workerId} in list of workers... Strange.. just skip him`);
+            continue;
+          }
+
+          if (worker.progress.energy < 5) {
+            logger.log(`[${this.config.username}]: Sending worker ${worker.name} to vacation`);
+            const goRestUrl = endpoint.getSendWorkerToRest(this.config, workerId);
+            await axios.post(goRestUrl);
+            continue;
+          }
 
           // yes, I am genius
           // increment siteIndexGoToWork if on first sites someone already does some work
-          while (tasks.find(task => task.scope === 'marketing' && task.siteId === sortedSites[siteIndexGoWork].id)) {
+          while (tasks.find((task) => {
+            return task.scope === 'marketing'
+              && sortedSites[siteIndexGoWork]
+              && (task.siteId === sortedSites[siteIndexGoWork].id)
+              && sortedSites[siteIndexGoWork].level < 1
+          })) {
             siteIndexGoWork += 1;
           }
 
           const destSite = sortedSites[siteIndexGoWork];
 
-          console.log(`[${this.config.username}]: adding worker ${workerId} to site ${destSite.domain}`);
+          if (!destSite) {
+            logger.log(`[${this.config.username}]: all sites are busy with CMs! so worker ${workerId} is just chilling`);
+          }
+
+          if (destSite.content.filter(content => content.status === 1).length === 4) {
+            logger.log(`[${this.config.username}]: all sites are full or in progress! so worker ${workerId} is just chilling`);
+            try {
+              const goRestUrl = endpoint.getSendWorkerToRest(this.config, workerId);
+              await axios.post(goRestUrl);
+            } catch (error) {
+              logger.log(`[${this.config.username}]: failed to send worker ${workerId} to rest`, 'ERROR');
+              this.updateConfigLog(error);
+              logger.log(error, 'ERROR');
+            }
+            continue;
+          }
+
+          logger.log(`[${this.config.username}]: adding worker ${workerId} to site ${destSite.domain}`);
           const pushUrl = endpoint.getSendWorkerToWork(this.config, destSite.id, 4);
           await axios.post(pushUrl, {
             workerIds: [workerId],
@@ -171,21 +198,16 @@ class CFRunner {
 
     for (const site of sitesWithoutBuffButWithStoredContent) {
       const lastContent = site.content.find(content => content.status === 2);
-      const anyContent = site.content.find(content => content.status === 1);
-      let interestedContent;
+      let interestedContent = site.content.find(content => content.status === 1);
 
-      if (!lastContent) {
-        interestedContent = anyContent;
-      } else {
-        const goodPotentialContent = site.content.find((content) => {
-          return content.status === 1 && content.contenttypeId !== lastContent.contenttypeId;
-        });
-        if (goodPotentialContent) {
-          interestedContent = goodPotentialContent;
-        }
+      const goodPotentialContent = site.content.find((content) => {
+        return content.status === 1 && content.contenttypeId !== lastContent.contenttypeId;
+      });
+      if (goodPotentialContent) {
+        interestedContent = goodPotentialContent;
       }
 
-      logger.log(`${new Date()}: processing site ${site.domain}`);
+      logger.log(`[${this.config.username}]: processing site ${site.domain}`);
       try {
         const url = endpoint.getPublishFreshContentUrl(this.config, site.id, interestedContent.id);
         await axios.post(url);
@@ -206,7 +228,7 @@ class CFRunner {
         continue;
       }
       try {
-        logger.log(`${new Date()}: Deleting spam from site ${site.domain}`);
+        logger.log(`[${this.config.username}]: Deleting spam from site ${site.domain}`);
         const url = endpoint.getDeleteSpamUrl(this.config, site.id);
 
         await axios.delete(url);
@@ -235,8 +257,9 @@ class CFRunner {
             const url = endpoint.getPublishSiteVersionUrl(this.config, site.id);
             try {
               const response = await axios.post(url);
-              logger.log(`Publish version for the [${site.domain}] - status: ${response.status}`);
+              logger.log(`[${this.config.username}]: Publish version for the [${site.domain}] - status: ${response.status}`);
             } catch (error) {
+              this.updateConfigLog(error);
               logger.log(error, 'ERROR');
             }
           }
@@ -247,10 +270,6 @@ class CFRunner {
     }
   }
 }
-
-const { constConfig } = require('./config');
-
-new CFRunner(constConfig[0]).getUserData();
 
 module.exports = {
   CFRunner,
