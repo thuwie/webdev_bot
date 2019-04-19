@@ -58,8 +58,8 @@ class APIService {
   // 1 backend
   getSendWorkerToWork(config, siteId, taskTypeId, ts = utils.getTs()) {
     return `${config.url}/sites/${config.userId}/${siteId}/${taskTypeId}/addTask?access_token=${config.accessToken}&connectionId=${config.connId}&ts=${ts}`;
-  // https://game.web-tycoon.com/api/sites/USERID/SITEID/4/addTask?access_token=T&connectionId=C&ts=T
-  // POST , body: { workersIds: [] }
+    // https://game.web-tycoon.com/api/sites/USERID/SITEID/4/addTask?access_token=T&connectionId=C&ts=T
+    // POST , body: { workersIds: [] }
   }
 
   getSendWorkerToRest(config, workerId, ts = utils.getTs()) {
@@ -73,6 +73,21 @@ class APIService {
     // https://game.web-tycoon.com/api/tasks/UID/TASKID/WORKERID/cancelVacation?access_token=A&connectionId=C&ts=T
     // POST
   }
+
+  getPayWorkerUrl(config, workerId, ts = utils.getTs()) {
+    return `${config.url}/workers/${config.userId}/${workerId}/payInAdvance?access_token=${config.accessToken}&connectionId=${config.connId}&ts=${ts}`;
+    // https://game.web-tycoon.com/api/workers/USERID/WORKERID/payInAdvance?access_token=a&connectionId=c&ts=ts
+    // POST
+  }
+
+  getPaySiteUrl(config, siteId, type, ts = utils.getTs()) {
+    // type - hostings || domains
+    return `${config.url}/${type}/${config.userId}/${siteId}/payInAdvance?access_token=${config.accessToken}&connectionId=${config.connId}&ts=${ts}`;
+    // https://game.web-tycoon.com/api/hostings/USERID/SITEID/payInAdvance?access_token=a&connectionId=c&ts=ts
+    // POST
+  }
+
+
 }
 
 module.exports = {

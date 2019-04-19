@@ -53,6 +53,17 @@ class CFRunner {
   }
 
   async runTask() {
+    let backendData;
+    try {
+      logger.log(`Running all tasks ${this.config.username}`);
+      backendData = await this.refresh();
+    } catch (error) {
+      logger.log(`[${this.config.username}]: Error in refresh: ${error && error.message ? error.message : error}`);
+    }
+
+  }
+
+  async runTask() {
     try {
       logger.log(`Running all tasks ${this.config.username}`);
       await this.refresh();
@@ -79,6 +90,11 @@ class CFRunner {
     } catch (error) {
       logger.log(`[${this.config.username}]: Error in work bitches: ${error && error.message ? error.message : error}`);
     }
+    try {
+      await this.payThings();
+    } catch (error) {
+      logger.log(`[${this.config.username}]: Error in pay domain: ${error && error.message ? error.message : error}`);
+    }
   }
 
   updateConfigLog(error) {
@@ -97,6 +113,7 @@ class CFRunner {
     this.body = await this.getUserData();
     this.config.username = this.body.person.username;
     this.updateConfigLog();
+    return this.body;
   }
 
   async getFromRest(worker, task) {
@@ -162,6 +179,23 @@ class CFRunner {
     }
   }
 
+  async payThings() {
+    const currentTime = utils.getTime();
+    this.body.sites.forEach(async site => {
+      if (site.hostingPaidTill && site.hostingPaidTill - currentTime < 79200) {
+        await this.paySite(site, 'hostings');
+      }
+      if (site.domainTill && site.domainTill - currentTime < 260000) {
+        await this.paySite(site, 'domains');
+      }
+    });
+    this.body.workers.forEach(async worker => {
+      if (worker.paidTill && worker.paidTill - currentTime < 79200) {
+        await this.payWorker(worker);
+      }
+    });
+  }
+
   async workBitches() {
     // we need fresh content here
     this.body = await this.getUserData();
@@ -204,7 +238,7 @@ class CFRunner {
             continue;
           }
         } else if (workerTask.zone === 'marketing') {
-          const { siteId } = workerTask;
+          const {siteId} = workerTask;
           const site = sites.find(currSite => currSite && (currSite.id === siteId));
           const countOfPreparedContent = site.content.filter(content => content.status === 1).length;
           if (countOfPreparedContent === 4) {
@@ -307,11 +341,11 @@ class CFRunner {
 
   async publishContent() {
     const unlimitedSites = this.body.sites.filter((site) => {
-      const { sitespeed } = site;
+      const {sitespeed} = site;
       return Array.isArray(sitespeed) && sitespeed[sitespeed.length - 1] && !sitespeed[sitespeed.length - 1].limited;
     });
     const sitesWithoutBuff = unlimitedSites.filter((site) => {
-      const { buffs } = site;
+      const {buffs} = site;
       return Array.isArray(buffs) && buffs.filter(buff => buff.object === 'content').length === 0;
     });
     const sitesWithoutBuffButWithStoredContent = sitesWithoutBuff.filter((site) => {
@@ -390,6 +424,30 @@ class CFRunner {
       }
     } catch (error) {
       logger.log(error.message);
+    }
+  }
+
+  async paySite(site, type) {
+    try {
+      logger.log(`[${this.config.username}]: Paying ${type} for the site ${site.domain}`);
+      const url = endpoint.getPaySiteUrl(this.config, site.id, type);
+      await axios.post(url);
+      await utils.sleep(1500);
+    } catch (error) {
+      this.updateConfigLog(error);
+      logger.log(error, 'ERROR');
+    }
+  }
+
+  async payWorker(worker) {
+    try {
+      logger.log(`[${this.config.username}]: Paying worker ${worker.name}`);
+      const url = endpoint.getPayWorkerUrl(this.config, worker.id);
+      await axios.post(url);
+      await utils.sleep(1500);
+    } catch (error) {
+      this.updateConfigLog(error);
+      logger.log(error, 'ERROR');
     }
   }
 }
