@@ -99,6 +99,13 @@ class APIService {
     // POST
   }
 
+  getDeleteSiteUrl(config, siteId, ts = utils.getTs()) {
+    // smells, may not work sry
+    return '';
+    // api/
+    // DELETE
+  }
+
 
 }
 

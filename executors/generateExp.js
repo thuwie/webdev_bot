@@ -59,6 +59,16 @@ async function publishVerison(site) {
   }
 }
 
+async function deleteSite(site) {
+  const url = endpoint.getDeleteSiteUrl(config, site);
+  try {
+      const response = await axios.delete(url);
+      logger.log(`[${this.config.username}]: Delete site [${site.domain}] - status: ${response.status}`);
+    } catch (error) {
+      logger.log(error, 'ERROR');
+    }
+}
+
 async function redesign(site) {
   const url = endpoint.getRedesignSiteUrl(config, site.id);
   const body = {design: 33, frontend: 34, backend: 33};
@@ -74,18 +84,20 @@ async function redesign(site) {
 let data;
 async function run() {
   const siteName = await createSite();
+  let isMaxed = false;
   if (siteName === '') return;
   data = await getUserData();
   const site = data.sites.filter(site => site.domain === siteName);
   await publishVerison(site);
   await redesignSite(site);
-
-  if (site.)
-
-}
-
-async function lvlUp() {
-
+  while(!isMaxed) {
+    if (site.level < 15) {
+      // calculate || wait logic
+      await publishVerison(site);
+    }
+  }
+  await deleteSite(site);
+  logger.log(`[${this.config.username}]: Exp farm cycle ended.`);
 }
 
 function isNewVersionReady(site) {
