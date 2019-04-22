@@ -29,7 +29,7 @@ async function getUserData() {
 
 async function createSite() {
   const url = endpoint.getCreateSiteUrl(config);
-  const siteName = `exp-${hiddenName}.free`;
+  const siteName = `exp-${config.hiddenName}.free`;
   const body = {
     domain: siteName,
     domainzoneId: 1,
@@ -39,7 +39,7 @@ async function createSite() {
   };
   try {
     const response = await axios.post(url, body);
-    logger.log(`[${this.config.username}]: Publish version for the [${site.domain}] - status: ${response.status}`);
+    logger.log(`[${config.username}]: Publish version for the [${site.domain}] - status: ${response.status}`);
     return siteName;
   } catch (error) {
     logger.log(error, 'ERROR');
@@ -80,21 +80,75 @@ async function redesign(site) {
   }
 }
 
+async function calculateWaitTime(site) {
+
+
+}
+
+async function setAssignees(workers, site) {
+  const backendWorkers = workers
+      .filter((worker) => {
+        const {
+          marketing, design, frontend, backend,
+        } = worker;
+        return backend >= marketing && backend >= design && backend >= frontend;
+      });
+  const frontendWorkers = workers
+      .filter((worker) => {
+        const {
+          marketing, design, frontend, backend,
+        } = worker;
+        return frontend >= backend && frontend >= design && frontend >= marketing;
+      });
+  const designWorkers = workers
+      .filter((worker) => {
+        const {
+          marketing, design, frontend, backend,
+        } = worker;
+        return design >= backend && design >= marketing && design >= frontend;
+      });
+
+  const workers = [
+    backendWorkers[0], 
+    frontendWorkers[0],
+    designWorkers[0]];
+
+    workers.forEach(async (worker, index) => {
+      try {
+      logger.log(`[${this.config.username}]: adding worker ${worker.name} to site ${site.domain}`);
+      const pushUrl = endpoint.getSendWorkerToWork(this.config, site.id, (index+1));
+      await axios.post(pushUrl, {
+        workerIds: [worker.id],
+      }); 
+    } catch (error) {
+      logger.log(error, 'ERROR');
+    }
+
+    });
+}
+
 
 let data;
 async function run() {
   const siteName = await createSite();
   let isMaxed = false;
+  let waiter = 1;
   if (siteName === '') return;
   data = await getUserData();
   const site = data.sites.filter(site => site.domain === siteName);
+  await setAssignees(data.workers, site);
   await publishVerison(site);
   await redesignSite(site);
   while(!isMaxed) {
     if (site.level < 15) {
+      utils.wait(waiter * 1000);
       // calculate || wait logic
       await publishVerison(site);
+    } else {
+      isMaxed = true;
     }
+
+    waiter += 5;
   }
   await deleteSite(site);
   logger.log(`[${this.config.username}]: Exp farm cycle ended.`);
