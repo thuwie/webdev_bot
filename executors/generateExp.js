@@ -39,7 +39,7 @@ async function createSite() {
   };
   try {
     const response = await axios.post(url, body);
-    logger.log(`[${config.username}]: Publish version for the [${site.domain}] - status: ${response.status}`);
+    logger.log(`[${config.username}]: Create site [${siteName}] - status: ${response.status}`);
     return siteName;
   } catch (error) {
     logger.log(error, 'ERROR');
@@ -52,7 +52,7 @@ async function publishVerison(site) {
     const url = endpoint.getPublishSiteVersionUrl(config);
     try {
       const response = await axios.post(url);
-      logger.log(`[${this.config.username}]: Publish version for the [${site.domain}] - status: ${response.status}`);
+      logger.log(`[${config.username}]: Publish version for the [${site.domain}] - status: ${response.status}`);
     } catch (error) {
       logger.log(error, 'ERROR');
     }
@@ -63,7 +63,7 @@ async function deleteSite(site) {
   const url = endpoint.getDeleteSiteUrl(config, site);
   try {
       const response = await axios.delete(url);
-      logger.log(`[${this.config.username}]: Delete site [${site.domain}] - status: ${response.status}`);
+      logger.log(`[${config.username}]: Delete site [${site.domain}] - status: ${response.status}`);
     } catch (error) {
       logger.log(error, 'ERROR');
     }
@@ -74,7 +74,7 @@ async function redesign(site) {
   const body = {design: 33, frontend: 34, backend: 33};
   try {
     const response = await axios.post(url, body);
-    logger.log(`[${this.config.username}]: Redesign a site [${site.domain}] - status: ${response.status}`);
+    logger.log(`[${config.username}]: Redesign a site [${site.domain}] - status: ${response.status}`);
   } catch (error) {
     logger.log(error, 'ERROR');
   }
@@ -108,15 +108,15 @@ async function setAssignees(workers, site) {
         return design >= backend && design >= marketing && design >= frontend;
       });
 
-  const workers = [
+  const filteredWorkers = [
     backendWorkers[0], 
     frontendWorkers[0],
     designWorkers[0]];
 
-    workers.forEach(async (worker, index) => {
+     filteredWorkers.forEach(async (worker, index) => {
       try {
-      logger.log(`[${this.config.username}]: adding worker ${worker.name} to site ${site.domain}`);
-      const pushUrl = endpoint.getSendWorkerToWork(this.config, site.id, (index+1));
+      logger.log(`[${config.username}]: adding worker ${worker.name} to site ${site.domain}`);
+      const pushUrl = endpoint.getSendWorkerToWork(config, site.id, (index+1));
       await axios.post(pushUrl, {
         workerIds: [worker.id],
       }); 
@@ -136,6 +136,7 @@ async function run() {
   if (siteName === '') return;
   data = await getUserData();
   const site = data.sites.filter(site => site.domain === siteName);
+  
   await setAssignees(data.workers, site);
   await publishVerison(site);
   await redesignSite(site);
@@ -151,7 +152,7 @@ async function run() {
     waiter += 5;
   }
   await deleteSite(site);
-  logger.log(`[${this.config.username}]: Exp farm cycle ended.`);
+  logger.log(`[${config.username}]: Exp farm cycle ended.`);
 }
 
 function isNewVersionReady(site) {
