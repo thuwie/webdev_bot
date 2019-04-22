@@ -87,6 +87,18 @@ class APIService {
     // POST
   }
 
+  getCreateSiteUrl(config, ts = utils.getTs()){
+    return `${config.url}/users/${config.userId}/sites?access_token=${config.accessToken}&connectionId=${config.connId}&ts=${ts}`;
+    // api/users/USERID/sites?access_token=a&connectionId=c&ts=t";
+    // POST
+  }
+
+  getRedesignSiteUrl(config, siteId, ts = utils.getTs()) {
+    return `${config.url}/sitekfparams/${config.userId}/${siteId}/add?access_token=${config.accessToken}&connectionId=${config.connId}&ts=${ts}`;
+    // api/sitekfparams/USERID/SITEID/add?access_token=a&connectionId=c&ts=t
+    // POST
+  }
+
 
 }
 
