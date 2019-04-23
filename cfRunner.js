@@ -19,6 +19,7 @@ class CFRunner {
     try {
       const parsedBody = await axios.get(url);
       this.updateConfigLog();
+      await utils.sleep(1500);
       return parsedBody.data;
     } catch (error) {
       this.updateConfigLog(error);
@@ -41,11 +42,11 @@ class CFRunner {
   async scheduleTasks(config, timeout = 1000 * 60 * 5) {
     this.config = config;
     this.config.url = 'https://game.web-tycoon.com/api';
-    await this.refresh();
+    // await this.refresh();
     if (this.intervalId) {
       clearInterval(this.intervalId);
     }
-    logger.log(`[${this.config.username}]: Scheduling tasks execution for ${this.config.username} each ${timeout} ms`);
+    logger.log(`[${this.config.hiddenName}]: Scheduling tasks execution for ${this.config.hiddenName} each ${timeout} ms`);
     await this.runTask();
     this.intervalId = setInterval(() => {
       this.runTask();
@@ -53,19 +54,9 @@ class CFRunner {
   }
 
   async runTask() {
-    let backendData;
+    this.config.url = 'https://game.web-tycoon.com/api';
     try {
-      logger.log(`Running all tasks ${this.config.username}`);
-      backendData = await this.refresh();
-    } catch (error) {
-      logger.log(`[${this.config.username}]: Error in refresh: ${error && error.message ? error.message : error}`);
-    }
-
-  }
-
-  async runTask() {
-    try {
-      logger.log(`Running all tasks ${this.config.username}`);
+      logger.log(`Running all tasks for ${this.config.username}`);
       await this.refresh();
     } catch (error) {
       logger.log(`[${this.config.username}]: Error in refresh: ${error && error.message ? error.message : error}`);
@@ -181,19 +172,20 @@ class CFRunner {
 
   async payThings() {
     const currentTime = utils.getTime();
-    this.body.sites.forEach(async site => {
+    for (const site of this.body.sites) {
       if (site.hostingPaidTill && site.hostingPaidTill - currentTime < 79200) {
         await this.paySite(site, 'hostings');
       }
       if (site.domainTill && site.domainTill - currentTime < 260000) {
         await this.paySite(site, 'domains');
       }
-    });
-    this.body.workers.forEach(async worker => {
+    }
+
+    for (const worker of this.body.workers) {
       if (worker.paidTill && worker.paidTill - currentTime < 79200) {
         await this.payWorker(worker);
       }
-    });
+    }
   }
 
   async workBitches() {
@@ -238,12 +230,12 @@ class CFRunner {
             continue;
           }
         } else if (workerTask.zone === 'marketing') {
-          const {siteId} = workerTask;
+          const { siteId } = workerTask;
           const site = sites.find(currSite => currSite && (currSite.id === siteId));
           const countOfPreparedContent = site.content.filter(content => content.status === 1).length;
           if (countOfPreparedContent === 4) {
             try {
-              console.log(`[${this.config.username}]: getting ${worker.name} back from task on site ${site.domain}`);
+              logger.log(`[${this.config.username}]: getting ${worker.name} back from task on site ${site.domain}`);
               const deleteUrl = endpoint.getFinishWorkerTaskForSiteIdUrl(this.config, siteId, worker.id);
               await axios.delete(deleteUrl);
               this.updateConfigLog();
@@ -341,11 +333,11 @@ class CFRunner {
 
   async publishContent() {
     const unlimitedSites = this.body.sites.filter((site) => {
-      const {sitespeed} = site;
+      const { sitespeed } = site;
       return Array.isArray(sitespeed) && sitespeed[sitespeed.length - 1] && !sitespeed[sitespeed.length - 1].limited;
     });
     const sitesWithoutBuff = unlimitedSites.filter((site) => {
-      const {buffs} = site;
+      const { buffs } = site;
       return Array.isArray(buffs) && buffs.filter(buff => buff.object === 'content').length === 0;
     });
     const sitesWithoutBuffButWithStoredContent = sitesWithoutBuff.filter((site) => {
@@ -364,7 +356,7 @@ class CFRunner {
         }
       }
 
-      logger.log(`[${this.config.username}]: processing site ${site.domain}`);
+      logger.log(`[${this.config.username}]: publishing fresh content to site ${site.domain}`);
       try {
         const url = endpoint.getPublishFreshContentUrl(this.config, site.id, interestedContent.id);
         await axios.post(url);
@@ -414,6 +406,7 @@ class CFRunner {
             const url = endpoint.getPublishSiteVersionUrl(this.config, site.id);
             try {
               const response = await axios.post(url);
+              await utils.sleep(1500);
               logger.log(`[${this.config.username}]: Publish version for the [${site.domain}] - status: ${response.status}`);
             } catch (error) {
               this.updateConfigLog(error);
@@ -453,7 +446,7 @@ class CFRunner {
 }
 
 // const { constConfigs } = require('./config.json');
-// const config = constConfigs[1];
+// const config = constConfigs[0];
 //
 // new CFRunner(config).scheduleTasks(config, 300000);
 

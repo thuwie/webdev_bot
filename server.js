@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
 const { CFRunner } = require('./cfRunner');
+const utils = require('./utils/utils');
 
 const app = express();
 
@@ -54,8 +55,21 @@ const { constConfigs } = require('./config.json');
 
 for (const config of constConfigs) {
   runners[config.userId] = new CFRunner(config);
-  runners[config.userId].scheduleTasks(config, 300000);
+  // runners[config.userId].scheduleTasks(config, 300000);
 }
+
+async function runTasksEndless() {
+  while (true) {
+    for (const config of constConfigs) {
+      const runner = runners[config.userId];
+      await runner.runTask();
+      await utils.sleep(5000);
+    }
+    await utils.sleep(300000);
+  }
+}
+
+runTasksEndless();
 
 app.listen(8080, () => {
   console.log('Started on port 8080!');
