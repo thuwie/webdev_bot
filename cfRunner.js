@@ -402,7 +402,8 @@ class CFRunner {
   async publishVersions() {
     try {
       for (const site of this.body.sites) {
-        if (this.config.lvlUp && this.config.lvlUp.indexOf(site.domain) >= 0) {
+        if ((this.config.lvlUp && this.config.lvlUp.indexOf(site.domain) >= 0)
+            || site.domain.indexOf('lvlup') === 0) {
           if (this.isNewVersionReady(site)) {
             const url = endpoint.getPublishSiteVersionUrl(this.config, site.id);
             try {
