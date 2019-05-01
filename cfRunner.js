@@ -332,12 +332,12 @@ class CFRunner {
   }
 
   async publishContent() {
-    const unlimitedSites = this.body.sites.filter((site) => {
-      const { sitespeed } = site;
-      const currentSitespeed = sitespeed[sitespeed.length - 1];
-      return Array.isArray(sitespeed) && sitespeed[sitespeed.length - 1] && !(currentSitespeed.communityValue + currentSitespeed.genericValue >= currentSitespeed.limit);
-    });
-    const sitesWithoutBuff = unlimitedSites.filter((site) => {
+    // const unlimitedSites = this.body.sites.filter((site) => {
+    //   const { sitespeed } = site;
+    //   const currentSitespeed = sitespeed[sitespeed.length - 1];
+    //   return Array.isArray(sitespeed) && sitespeed[sitespeed.length - 1] && !(currentSitespeed.communityValue + currentSitespeed.genericValue >= currentSitespeed.limit);
+    // });
+    const sitesWithoutBuff = this.body.sites.filter((site) => {
       const { buffs } = site;
       return Array.isArray(buffs) && buffs.filter(buff => buff.object === 'content').length === 0;
     });
