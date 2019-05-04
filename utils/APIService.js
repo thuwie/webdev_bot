@@ -100,13 +100,10 @@ class APIService {
   }
 
   getDeleteSiteUrl(config, siteId, ts = utils.getTs()) {
-    // smells, may not work sry
-    return '';
-    // api/
+    return `${config.url}/sites/${config.userId}/${siteId}?access_token=${config.accessToken}&connectionId=${config.connId}&ts=${ts}`;
+    // api/sites/USERID/SITEID?access_token=a&connectionId=c&ts=ts
     // DELETE
   }
-
-
 }
 
 module.exports = {
