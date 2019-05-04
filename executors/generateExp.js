@@ -90,8 +90,7 @@ async function createSite() {
     logger.log(`[${config.username}]: Create site [${siteName}] - status: ${response.status}`);
     return siteName;
   } catch (error) {
-    logger.log(error, 'ERROR');
-    return '';
+    errorHandler(error);
   }
 }
 
@@ -116,7 +115,7 @@ async function deleteSite(site) {
     const response = await axios.delete(url);
     logger.log(`[${config.username}]: Delete site [${site.domain}] - status: ${response.status}`);
   } catch (error) {
-    logger.log(error, 'ERROR');
+    errorHandler(error);
   }
 }
 
@@ -127,7 +126,7 @@ async function redesignSite(site) {
     const response = await axios.post(url, body);
     logger.log(`[${config.username}]: Redesign a site [${site.domain}] - status: ${response.status}`);
   } catch (error) {
-    logger.log(error, 'ERROR');
+    errorHandler(error);
   }
 }
 
@@ -171,7 +170,7 @@ async function setAssignees(workers, site) {
       });
       await utils.sleep(1000);
     } catch (error) {
-      logger.log(error, 'ERROR');
+      errorHandler(error);
     }
 
   }
@@ -181,6 +180,14 @@ async function refreshSiteData() {
   data = await getUserData();
   const filteredSite = data.sites.filter(site => site.domain === sitename);
   site = filteredSite[0];
+}
+
+async function errorHandler(error) {
+  logger.log(error, 'ERROR');
+  logger.log(`[${config.username}]: Exp farm cycle broken. Rest for the 10 seconds.`);
+  await deleteSite(site);
+  await utils.sleep(10000);
+  run();
 }
 
 async function run() {
