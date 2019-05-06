@@ -1,6 +1,6 @@
 const express = require('express');
 const path = require('path');
-const { CFRunner } = require('./cfRunner');
+const { CFRunner } = require('./bot_tasks/CFRunner');
 const utils = require('./utils/utils');
 
 const app = express();
@@ -24,7 +24,7 @@ app.get('/add', (req, res) => {
     connectionId,
   };
 
-  runners[userId] = new CFRunner(currConfig);;
+  runners[userId] = new CFRunner(currConfig);
   runners[userId].scheduleTasks(currConfig, timeout)
     .then(() => {
       res.send('Hello World!');
@@ -63,9 +63,9 @@ async function runTasksEndless() {
     for (const config of constConfigs) {
       const runner = runners[config.userId];
       await runner.runTask();
-      await utils.sleep(5000);
+      await utils.sleep(3000);
     }
-    await utils.sleep(300000);
+    await utils.sleep(180000);
   }
 }
 
