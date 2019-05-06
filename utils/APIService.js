@@ -104,6 +104,11 @@ class APIService {
     // api/sites/USERID/SITEID?access_token=a&connectionId=c&ts=ts
     // DELETE
   }
+
+  getDeleteContentItemUrl(config, siteId, contentItemId, ts = utils.getTs()) {
+    return `${config.url}/content/${config.userId}/${siteId}/${contentItemId}/deleteOffer?access_token=${config.accessToken}&connectionId=${config.connId}&ts=${ts}`;
+    // DELETE
+  }
 }
 
 module.exports = {

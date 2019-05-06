@@ -201,6 +201,7 @@ class CFRunner {
         const taskForSite = tasks.find(task => task.scope === 'marketing' && (task.siteId === site.id));
         return taskForSite === undefined;
       })
+      .filter(site => !site.domain.startsWith('lvlup') && !site.domain.startsWith('exp-'))
       .filter(site => site.level > 0)
       .sort((site1, site2) => site1.content.length - site2.content.length);
 
@@ -220,7 +221,7 @@ class CFRunner {
           await this.goToWorkOrRest(sitesWithFreePlaceForContentWithoutWorkers, worker);
           continue;
         } else if (workerTask.zone === 'vacation') {
-          if (worker.progress.energy > 95 && sitesWithFreePlaceForContentWithoutWorkers.length > 0) {
+          if (worker.progress.energy > 70 && sitesWithFreePlaceForContentWithoutWorkers.length > 0) {
             await this.getFromRest(worker, workerTask);
             await utils.sleep(500);
             await this.goToWork(sitesWithFreePlaceForContentWithoutWorkers, worker);
@@ -232,6 +233,16 @@ class CFRunner {
         } else if (workerTask.zone === 'marketing') {
           const { siteId } = workerTask;
           const site = sites.find(currSite => currSite && (currSite.id === siteId));
+
+          const longDurationContents = site.content.filter(content => content.status === 1 && (content.contenttypeId === 3 || content.contenttypeId === 6));
+          for (const longContentItem of longDurationContents) {
+            logger.log(`[${this.config.username}]: deleting content with type ${longContentItem.contenttypeId} from site ${site.domain}`);
+            const deleteContentUrl = endpoint.getDeleteContentItemUrl(this.config, site.id, longContentItem.id);
+            await axios.delete(deleteContentUrl);
+            this.updateConfigLog();
+            await utils.sleep(1000);
+          }
+
           const countOfPreparedContent = site.content.filter(content => content.status === 1).length;
           if (countOfPreparedContent === 4) {
             try {
@@ -256,87 +267,10 @@ class CFRunner {
         logger.log(`[${this.config.username}]: failed handle worker ${worker.name}`);
         logger.log(error, 'ERROR');
       }
-
-      // go to work
     }
-
-    // const marketingTasks = tasks.filter(t => t.tasktypeId === 4);
-    // for (const task of marketingTasks) {
-    //   const { siteId } = task;
-    //   const workerId = task.workers[0];
-    //   const site = sites.find(currSite => currSite && (currSite.id === siteId));
-    //   const countOfPreparedContent = site.content.filter(content => content.status === 1).length;
-    //   if (countOfPreparedContent === 4) {
-    //     try {
-    //       const deleteUrl = endpoint.getFinishWorkerTaskForSiteIdUrl(this.config, siteId, workerId);
-    //       await axios.delete(deleteUrl);
-    //       this.updateConfigLog();
-    //       await utils.sleep(1000);
-    //
-    //       const worker = workers.find(w => w.id === workerId);
-    //       if (!worker) {
-    //         logger.log(`[${this.config.username}]: Can't find worker ${workerId} in list of workers... Strange.. just skip him`);
-    //         continue;
-    //       }
-    //
-    //       if (worker.progress.energy < 5) {
-    //         logger.log(`[${this.config.username}]: Sending worker ${worker.name} to vacation`);
-    //         const goRestUrl = endpoint.getSendWorkerToRest(this.config, workerId);
-    //         await axios.post(goRestUrl);
-    //         continue;
-    //       }
-    //
-    //       // yes, I am genius
-    //       // increment siteIndexGoToWork if on first sites someone already does some work
-    //       while (tasks.find(task => task.scope === 'marketing'
-    //           && sortedSites[siteIndexGoWork]
-    //           && (task.siteId === sortedSites[siteIndexGoWork].id)
-    //           && sortedSites[siteIndexGoWork].level < 1)) {
-    //         siteIndexGoWork += 1;
-    //       }
-    //
-    //       const destSite = sortedSites[siteIndexGoWork];
-    //
-    //       if (!destSite) {
-    //         logger.log(`[${this.config.username}]: all sites are busy with CMs! so worker ${workerId} is just chilling`);
-    //       }
-    //
-    //       if (destSite.content.filter(content => content.status === 1).length === 4) {
-    //         logger.log(`[${this.config.username}]: all sites are full or in progress! so worker ${workerId} is just chilling`);
-    //         try {
-    //           const goRestUrl = endpoint.getSendWorkerToRest(this.config, workerId);
-    //           await axios.post(goRestUrl);
-    //         } catch (error) {
-    //           logger.log(`[${this.config.username}]: failed to send worker ${workerId} to rest`, 'ERROR');
-    //           this.updateConfigLog(error);
-    //           logger.log(error, 'ERROR');
-    //         }
-    //         continue;
-    //       }
-    //
-    //       logger.log(`[${this.config.username}]: adding worker ${workerId} to site ${destSite.domain}`);
-    //       const pushUrl = endpoint.getSendWorkerToWork(this.config, destSite.id, 4);
-    //       await axios.post(pushUrl, {
-    //         workerIds: [workerId],
-    //       });
-    //
-    //       siteIndexGoWork += 1;
-    //       this.updateConfigLog();
-    //       await utils.sleep(1000);
-    //     } catch (error) {
-    //       this.updateConfigLog(error);
-    //       logger.log(error, 'ERROR');
-    //     }
-    //   }
-    // }
   }
 
   async publishContent() {
-    // const unlimitedSites = this.body.sites.filter((site) => {
-    //   const { sitespeed } = site;
-    //   const currentSitespeed = sitespeed[sitespeed.length - 1];
-    //   return Array.isArray(sitespeed) && sitespeed[sitespeed.length - 1] && !(currentSitespeed.communityValue + currentSitespeed.genericValue >= currentSitespeed.limit);
-    // });
     const sitesWithoutBuff = this.body.sites.filter((site) => {
       const { buffs } = site;
       return Array.isArray(buffs) && buffs.filter(buff => buff.object === 'content').length === 0;
@@ -403,7 +337,7 @@ class CFRunner {
     try {
       for (const site of this.body.sites) {
         if ((this.config.lvlUp && this.config.lvlUp.indexOf(site.domain) >= 0)
-            || site.domain.indexOf('lvlup') === 0) {
+            || site.domain.startsWith('lvlup')) {
           if (this.isNewVersionReady(site)) {
             const url = endpoint.getPublishSiteVersionUrl(this.config, site.id);
             try {
@@ -449,7 +383,7 @@ class CFRunner {
 
 // const { constConfigs } = require('./config.json');
 // const config = constConfigs[0];
-//
+// 
 // new CFRunner(config).scheduleTasks(config, 300000);
 
 module.exports = {
