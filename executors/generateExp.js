@@ -5,7 +5,8 @@ const endpoint = require('../utils/APIService').APIService;
 const utils = require('../utils/utils');
 const logger = require('../utils/logger');
 
-const {constConfigs} = require('../config.json');
+const { constConfigs } = require('../config.json');
+
 const config = constConfigs[0];
 
 class Emitter extends EventEmitter {}
@@ -56,10 +57,10 @@ function setSocketTunnel() {
     console.log('open');
     socketConnection.send(socketLogin);
   };
-  socketConnection.onerror = error => {
-    console.log(`WebSocket error: ${error}`)
+  socketConnection.onerror = (error) => {
+    console.log(`WebSocket error: ${error}`);
   };
-  socketConnection.onmessage = message => {
+  socketConnection.onmessage = (message) => {
     let actions = [];
     const messageObject = JSON.parse(message.data);
 
@@ -83,11 +84,12 @@ async function createSite() {
     domainzoneId: 1,
     engineId: 1, // 8 - first fast engine; 1 - second
     sitethemeId: 1,
-    sitetypeId: 3
+    sitetypeId: 3,
   };
   try {
     const response = await axios.post(url, body);
     logger.log(`[${config.username}]: Create site [${siteName}] - status: ${response.status}`);
+    await utils.sleep(500);
     return siteName;
   } catch (error) {
     errorHandler(error);
@@ -100,6 +102,7 @@ async function publishVerison(site) {
   try {
     const response = await axios.post(url);
     publishTimestamp = newPublishTimestamp;
+    await utils.sleep(1000);
     await refreshSiteData();
     logger.log(`[${config.username}]: Publish version for the [${site.domain}] - status: ${response.status}`);
   } catch (error) {
@@ -121,10 +124,11 @@ async function deleteSite(site) {
 
 async function redesignSite(site) {
   const url = endpoint.getRedesignSiteUrl(config, site.id);
-  const body = {params: {design: 33, frontend: 34, backend: 33}};
+  const body = { params: { design: 33, frontend: 34, backend: 33 } };
   try {
     const response = await axios.post(url, body);
     logger.log(`[${config.username}]: Redesign a site [${site.domain}] - status: ${response.status}`);
+    await utils.sleep(1000);
   } catch (error) {
     errorHandler(error);
   }
@@ -156,7 +160,7 @@ async function setAssignees(workers, site) {
   const filteredWorkers = [
     backendWorkers[0],
     frontendWorkers[0],
-    designWorkers[0]
+    designWorkers[0],
   ];
 
 
@@ -172,7 +176,6 @@ async function setAssignees(workers, site) {
     } catch (error) {
       errorHandler(error);
     }
-
   }
 }
 
@@ -195,7 +198,7 @@ async function run() {
   if (sitename === '') return;
   await refreshSiteData();
   await redesignSite(site);
-  await utils.sleep(5000);
+  await utils.sleep(1500);
   await setAssignees(data.workers, site);
 }
 setSocketTunnel();
