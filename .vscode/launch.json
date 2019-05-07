@@ -8,7 +8,7 @@
             "type": "node",
             "request": "launch",
             "name": "Launch Program",
-            "program": "${workspaceFolder}\\cfRunner.js"
+            "program": "${workspaceFolder}\\bot_tasks\\CFRunner.js"
         }
     ]
 }

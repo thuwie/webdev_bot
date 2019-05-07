@@ -82,10 +82,8 @@ async function workBitches(config, userData) {
       }
       if (workerTask.zone === 'vacation') {
         if (worker.progress.energy > 70 && sitesWithFreePlaceForContentWithoutWorkers.length > 0) {
-          const success = await RequestsExecutor.getFromRest(config, worker, workerTask.id);
-          if (success) {
-            await goToWork(config, sitesWithFreePlaceForContentWithoutWorkers, worker);
-          }
+          await RequestsExecutor.getFromRest(config, worker, workerTask.id);
+          await goToWork(config, sitesWithFreePlaceForContentWithoutWorkers, worker);
         } else {
           logger.log(
             `[${config.username}]: ${worker.name} has a rest and energy is ${worker.progress.energy}. Don't touch him`,
@@ -101,17 +99,17 @@ async function workBitches(config, userData) {
           .filter(content => content.status === 1 && (content.contenttypeId === 3 || content.contenttypeId === 6));
 
         let deletedCount = 0;
-        for (const longContentItem of longDurationContents) {
-          await RequestsExecutor.deleteContentItem(config, site, longContentItem);
-          deletedCount += 1;
+        if (config.deleteLongContent) {
+          for (const longContentItem of longDurationContents) {
+            await RequestsExecutor.deleteContentItem(config, site, longContentItem);
+            deletedCount += 1;
+          }
         }
 
         const countOfPreparedContent = site.content.filter(content => content.status === 1).length;
         if (countOfPreparedContent - deletedCount === 4) {
-          const success = await RequestsExecutor.finishWorkerTask(config, site, worker);
-          if (success) {
-            await goToWorkOrRest(config, sitesWithFreePlaceForContentWithoutWorkers, worker);
-          }
+          await RequestsExecutor.finishWorkerTask(config, site, worker);
+          await goToWorkOrRest(config, sitesWithFreePlaceForContentWithoutWorkers, worker);
         }
       } else {
         logger.log(`[${config.username}]: i dont know what to do with ${worker.name}`);

@@ -7,7 +7,7 @@ const logger = require('../utils/logger');
 
 const { constConfigs } = require('../config.json');
 
-const config = constConfigs[0];
+const config = constConfigs[process.argv[2] || 0];
 
 class Emitter extends EventEmitter {}
 const emitter = new Emitter();

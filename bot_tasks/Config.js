@@ -9,7 +9,9 @@ class Config {
     this.connectionId = config.connectionId;
     this.lvlUp = config.lvlUp;
     this.connId = config.connId;
-
+    this.deleteOldAd = config.deleteOldAd;
+    this.deleteLongContent = config.deleteLongContent;
+    
     this.username = config.username;
   }
 

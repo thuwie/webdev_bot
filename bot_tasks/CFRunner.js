@@ -3,6 +3,7 @@ const RequestsExecutor = require('./RequestsExecutor');
 const BookkeepingService = require('./BookkeepingService');
 const PublishingService = require('./PublishingService');
 const WorkersManagementService = require('./WorkersManagementService');
+const AdsService = require('./AdsService');
 const { Config } = require('./Config');
 
 
@@ -60,6 +61,13 @@ class CFRunner {
     } catch (error) {
       logger.log(`[${this.config.username}]: Error in pay domain: ${error && error.message ? error.message : error}`);
     }
+    try {
+      if (this.config.deleteOldAd) {
+        await AdsService.handleAdBanners(this.config, this.body);
+      }
+    } catch (error) {
+      logger.log(`[${this.config.username}]: Error in handle ad banners: ${error && error.message ? error.message : error}`);
+    }
   }
 
   getSafeConfigInfo() {
@@ -75,9 +83,9 @@ class CFRunner {
 }
 
 // const { constConfigs } = require('../config.json');
-//
+
 // const config = constConfigs[0];
-//
+
 // new CFRunner(config).runTask();
 
 module.exports = {

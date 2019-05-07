@@ -10,9 +10,10 @@ const logger = require('../utils/logger');
  * @returns {Promise<void>}
  */
 async function executePostAndSleep(config, url, requestBody) {
-  await axios.post(url, requestBody);
+  const res = await axios.post(url, requestBody);
   config.updateLogInfo();
   await utils.sleep(1500);
+  return res.data;
 }
 
 /**
@@ -22,9 +23,10 @@ async function executePostAndSleep(config, url, requestBody) {
  * @returns {Promise<void>}
  */
 async function executeDeleteAndSleep(config, url) {
-  await axios.delete(url);
+  const res = await axios.delete(url);
   config.updateLogInfo();
   await utils.sleep(1500);
+  return res.data;
 }
 
 /**
@@ -135,4 +137,29 @@ module.exports = {
     );
     return executeRequest(config, executeDeleteAndSleep.bind(this, config, url));
   },
+
+  async deleteAd(config, site, banner, ts = utils.getTs()) {
+    const url = `${config.url}/ad_s/${config.userId}/${banner.id}/delete?access_token=${config.accessToken}&connectionId=${config.connId}&ts=${ts}`;
+    logger.log(`[${config.username}]: Deleting ad ${banner.id} from site ${site.domain}`);
+    return executeRequest(config, executeDeleteAndSleep.bind(this, config, url));
+  },
+
+  async searchAd(config, site, ts = utils.getTs()) {
+    const url = `${config.url}/ad_s/ad/${config.userId}/generateOffers/${site.id}/2?access_token=${config.accessToken}&connectionId=${config.connId}&ts=${ts}`;
+    logger.log(`[${config.username}]: Searching ad on site ${site.domain}`);
+    return executeRequest(config, executePostAndSleep.bind(this, config, url));
+  },
+
+  async enableAd(config, site, banner, ts = utils.getTs()) {
+    const url = `${config.url}/ad_s/${config.userId}/${site.id}/add?access_token=${config.accessToken}&connectionId=${config.connId}&ts=${ts}`;
+    logger.log(`[${config.username}]: Enabling ad ${banner.id} on site ${site.domain}`);
+    return executeRequest(config, executePostAndSleep.bind(this, config, url, { adId: banner.id }));
+  },
+
+  async disableAd(config, site, banner, ts = utils.getTs()) {
+    const url = `${config.url}/ad_s/${config.userId}/${banner.id}/cancel?access_token=${config.accessToken}&connectionId=${config.connId}&ts=${ts}`;
+    logger.log(`[${config.username}]: Disabling ad on site ${site.domain}`);
+    return executeRequest(config, executeDeleteAndSleep.bind(this, config, url, { adId: banner.id }));
+  },
+
 };
