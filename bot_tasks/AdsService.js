@@ -33,11 +33,17 @@ async function handleAdBanners(config, userData) {
         break;
       }
 
-      for (let i = iteratedIndex + 1; i < site.ad.length; i += 1) {
+      let i = 0;
+      for (i = iteratedIndex + 1; i < site.ad.length; i += 1) {
         if (site.ad[i].status === 0) {
           iteratedIndex = i;
           break;
         }
+      }
+
+      if (i === site.ad.length) {
+        // we went through all sites.ad and didn't find apropriate one
+        break;
       }
 
       const nextDisabledBanner = site.ad[iteratedIndex];
