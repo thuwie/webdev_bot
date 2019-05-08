@@ -9,7 +9,6 @@ function tooOldBanner(site, ad, ctrRate) {
 async function handleAdBanners(config, userData) {
   const interestingSites = userData.sites.filter(s => !s.domain.startsWith('lvlup') && !s.domain.startsWith('exp-'));
   for (const site of interestingSites) {
-    console.log(`handling site ${site.domain}`);
     const isSearchingAd = userData.tasks.find(task => task.zone === 'searchAd' && task.siteId === site.id);
 
     const bannersToRemove = site.ad
@@ -17,7 +16,7 @@ async function handleAdBanners(config, userData) {
 
     for (const banner of bannersToRemove) {
       const response = await RequestsExecutor.deleteAd(config, site, banner);
-      const newAnno = response.shadoWs.value.find(v => v.target === 'site' && v.action === 'update' && v.value && v.value.hasOwnProperty('anno')).value.anno;
+      const newAnno = response.data.shadoWs.value.find(v => v.target === 'site' && v.action === 'update' && v.value && v.value.hasOwnProperty('anno')).value.anno;
       site.anno = newAnno;
       const bannerIndex = site.ad.findIndex(ad => ad.id === banner.id);
       site.ad.splice(bannerIndex, 1);
@@ -52,12 +51,12 @@ async function handleAdBanners(config, userData) {
       }
 
       const response = await RequestsExecutor.enableAd(config, site, nextDisabledBanner);
-      let newAnno = response.shadoWs.value.find(v => v.target === 'site' && v.action === 'update' && v.value && v.value.hasOwnProperty('anno')).value.anno;
+      let newAnno = response.data.shadoWs.value.find(v => v.target === 'site' && v.action === 'update' && v.value && v.value.hasOwnProperty('anno')).value.anno;
       nextDisabledBanner.status = 1;
       if (newAnno > 45) {
         // too big new annoyance. lets disable it
         const delResponse = await RequestsExecutor.disableAd(config, site, nextDisabledBanner);
-        newAnno = delResponse.shadoWs.value.find(v => v.target === 'site' && v.action === 'update' && v.value && v.value.hasOwnProperty('anno')).value.anno;
+        newAnno = delResponse.data.shadoWs.value.find(v => v.target === 'site' && v.action === 'update' && v.value && v.value.hasOwnProperty('anno')).value.anno;
         nextDisabledBanner.status = 0;
       }
       site.anno = newAnno;

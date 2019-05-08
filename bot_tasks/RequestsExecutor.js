@@ -1,4 +1,5 @@
 const axios = require('axios');
+const retry = require('async-retry');
 const utils = require('../utils/utils');
 const logger = require('../utils/logger');
 
@@ -13,7 +14,7 @@ async function executePostAndSleep(config, url, requestBody) {
   const res = await axios.post(url, requestBody);
   config.updateLogInfo();
   await utils.sleep(1500);
-  return res.data;
+  return res;
 }
 
 /**
@@ -26,7 +27,7 @@ async function executeDeleteAndSleep(config, url) {
   const res = await axios.delete(url);
   config.updateLogInfo();
   await utils.sleep(1500);
-  return res.data;
+  return res;
 }
 
 /**
@@ -39,12 +40,34 @@ async function executeGetAndSleep(config, url) {
   const parsedBody = await axios.get(url);
   config.updateLogInfo();
   await utils.sleep(1500);
-  return parsedBody.data;
+  return parsedBody;
 }
 
 async function executeRequest(config, func, errMsg) {
   try {
-    return await func();
+    const res = await retry(async (bail) => {
+      try {
+        return await func();
+      } catch (error) {
+        const responseStatus = (error && error.response && error.response.status) ? error.response.status : 0;
+        if (responseStatus === 429 || responseStatus === 502) {
+          logger.log(`[${config.username}]: Got HTTP status ${error.response.status}. Retry after 1500 ms`);
+          throw new Error('retry!');
+        } else {
+          // don't retry other errors
+          logger.log(`got an ${responseStatus}. dont retry it`);
+          bail(error);
+          return;
+        }
+      }
+    }, {
+      factor: 2,
+      retries: 5,
+      minTimeout: 1500,
+      maxTimeout: 6000,
+      randomize: true,
+    });
+    return res;
   } catch (error) {
     if (errMsg) {
       logger.log(errMsg, 'ERROR');
@@ -64,6 +87,8 @@ module.exports = {
    */
   async auth(config, ts = utils.getTs()) {
     const url = `${config.url}/users/${config.userId}/init?access_token=${config.accessToken}&connectionId=${config.connId}&ts=${ts}`;
+    logger.log(`[${config.username}]: Init request for ${config.hiddenName}`);
+    await utils.sleep(1500);
     return executeRequest(config, executeGetAndSleep.bind(this, config, url));
   },
 
@@ -162,4 +187,21 @@ module.exports = {
     return executeRequest(config, executeDeleteAndSleep.bind(this, config, url, { adId: banner.id }));
   },
 
+  async deleteSite(config, site, ts = utils.getTs()) {
+    const url = `${config.url}/sites/${config.userId}/${site.id}?access_token=${config.accessToken}&connectionId=${config.connId}&ts=${ts}`;
+    logger.log(`[${config.username}]: Delete site [${site.domain}]`);
+    return executeRequest(config, executeDeleteAndSleep.bind(this, config, url));
+  },
+
+  async createSite(config, body, ts = utils.getTs()) {
+    const url = `${config.url}/users/${config.userId}/sites?access_token=${config.accessToken}&connectionId=${config.connId}&ts=${ts}`;
+    logger.log(`[${config.username}]: Create site [${body.domain}]`);
+    return executeRequest(config, executePostAndSleep.bind(this, config, url, body));
+  },
+
+  async redesignSite(config, site, designProps, ts = utils.getTs()) {
+    const url = `${config.url}/sitekfparams/${config.userId}/${site.id}/add?access_token=${config.accessToken}&connectionId=${config.connId}&ts=${ts}`;
+    logger.log(`[${config.username}]: Redesign a site [${site.domain}]`);
+    return executeRequest(config, executePostAndSleep.bind(this, config, url, designProps));
+  },
 };

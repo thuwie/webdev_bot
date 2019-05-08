@@ -22,8 +22,8 @@ class CFRunner {
    */
   async refresh() {
     const body = await RequestsExecutor.auth(this.config);
-    if (body) {
-      this.body = body;
+    if (body.data) {
+      this.body = body.data;
       this.config.username = this.body.person.username;
     }
   }
