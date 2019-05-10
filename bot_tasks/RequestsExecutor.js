@@ -134,6 +134,12 @@ module.exports = {
     return executeRequest(config, executePostAndSleep.bind(this, config, url),
       `[${config.username}]: failed to send worker ${worker.name} to vacation`);
   },
+  
+  async postSiteLinkUrl(config, targetSideId, postingSiteId, ts = utils.getTs()) {
+    const url =`${config.url}/links/${config.userId}/${targetSideId}/${postingSiteId}/1?access_token=${config.accessToken}&connectionId=${config.connId}&ts=${ts}`;
+    return executeRequest(config, executePostAndSleep.bind(this, config, url),
+      `[${config.username}]: failed `);
+  },
 
   async getFromRest(config, worker, taskId, ts = utils.getTs()) {
     const url = `${config.url}/tasks/${config.userId}/${taskId}/${worker.id}/cancelVacation?access_token=${config.accessToken}&connectionId=${config.connId}&ts=${ts}`;
