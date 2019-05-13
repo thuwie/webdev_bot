@@ -210,4 +210,15 @@ module.exports = {
     logger.log(`[${config.username}]: Redesign a site [${site.domain}]`);
     return executeRequest(config, executePostAndSleep.bind(this, config, url, designProps));
   },
+  
+  async sendMessage(config, text, to = '0', type = 1, ts = utils.getTs()) {
+    const url = `${config.url}/msg/${config.userId}/send?access_token=${config.accessToken}&connectionId=${config.connId}&ts=${ts}`;
+    const requestBody = {
+      text,
+      to,
+      type
+    };
+    logger.log(`[${config.username}]: Sending a message ${text}`);
+    return executeRequest(config, executePostAndSleep.bind(this, config, url, requestBody));
+  },
 };
