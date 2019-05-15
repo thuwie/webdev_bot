@@ -12,12 +12,12 @@ async function handleAdBanners(config, userData) {
     const isSearchingAd = userData.tasks.find(task => task.zone === 'searchAd' && task.siteId === site.id);
 
     const bannersToRemove = site.ad
-      .filter(ad => tooOldBanner(site, ad, 2) || (ad.adthemeId !== site.sitethemeId));
+      // importunity (=== annoyance) - 12 (green), 41 (yellow), 100 (red)
+      .filter(ad => tooOldBanner(site, ad, 2) || (ad.adthemeId !== site.sitethemeId) || ad.importunity < 41);
 
     for (const banner of bannersToRemove) {
-      const response = await RequestsExecutor.deleteAd(config, site, banner);
-      const newAnno = response.data.shadoWs.value.find(v => v.target === 'site' && v.action === 'update' && v.value && v.value.hasOwnProperty('anno')).value.anno;
-      site.anno = newAnno;
+      await RequestsExecutor.deleteAd(config, site, banner);
+      // delete removed banner from local copy of site.ad (to not execute /init again)
       const bannerIndex = site.ad.findIndex(ad => ad.id === banner.id);
       site.ad.splice(bannerIndex, 1);
     }
@@ -26,40 +26,23 @@ async function handleAdBanners(config, userData) {
       await RequestsExecutor.searchAd(config, site);
     }
 
-    let iteratedIndex = -1;
-    while (site.anno < 30) {
-      if (iteratedIndex + 1 >= site.ad.length) {
+    let totalEnabledImportunity = site.ad
+      .filter(a => a.status === 1)
+      .reduce((a1, a2) => a1 + a2.importunity, 0);
+
+    for (const banner of site.ad) {
+      if (totalEnabledImportunity > 100) {
         break;
       }
-
-      let i = 0;
-      for (i = iteratedIndex + 1; i < site.ad.length; i += 1) {
-        if (site.ad[i].status === 0) {
-          iteratedIndex = i;
-          break;
-        }
+      if (banner.status === 1) {
+        continue;
       }
 
-      if (i === site.ad.length) {
-        // we went through all sites.ad and didn't find apropriate one
-        break;
+      // if it's not 3+3
+      if (banner.importunity + totalEnabledImportunity < 200) {
+        await RequestsExecutor.enableAd(config, site, banner);
+        totalEnabledImportunity += banner.importunity;
       }
-
-      const nextDisabledBanner = site.ad[iteratedIndex];
-      if (!nextDisabledBanner) {
-        break;
-      }
-
-      const response = await RequestsExecutor.enableAd(config, site, nextDisabledBanner);
-      let newAnno = response.data.shadoWs.value.find(v => v.target === 'site' && v.action === 'update' && v.value && v.value.hasOwnProperty('anno')).value.anno;
-      nextDisabledBanner.status = 1;
-      if (newAnno > 45) {
-        // too big new annoyance. lets disable it
-        const delResponse = await RequestsExecutor.disableAd(config, site, nextDisabledBanner);
-        newAnno = delResponse.data.shadoWs.value.find(v => v.target === 'site' && v.action === 'update' && v.value && v.value.hasOwnProperty('anno')).value.anno;
-        nextDisabledBanner.status = 0;
-      }
-      site.anno = newAnno;
     }
   }
 }

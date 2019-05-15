@@ -50,7 +50,7 @@ async function executeRequest(config, func, errMsg) {
         return await func();
       } catch (error) {
         const responseStatus = (error && error.response && error.response.status) ? error.response.status : 0;
-        if (responseStatus === 429 || responseStatus === 502) {
+        if (responseStatus === 429 || responseStatus === 502 || responseStatus === 0) {
           logger.log(`[${config.username}]: Got HTTP status ${error.response.status}. Retry after 1500 ms`);
           throw new Error('retry!');
         } else {

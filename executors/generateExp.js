@@ -134,7 +134,8 @@ async function createSite() {
     logger.log(`[${config.username}]: Create site [${expGeneratorSiteName}] - status: ${response.status}`);
     site = response.data;
     data.sites.push(site);
-    return site.domain;
+    await RequestsExecutor.paySite(config, site, 'domains');
+    return site.domain;    
   } catch (error) {
     errorHandler(error);
   }

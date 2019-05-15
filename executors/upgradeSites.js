@@ -13,7 +13,7 @@ class Emitter extends EventEmitter {
 }
 const emitter = new Emitter();
 
-const LEVEL_CAP = 9;
+const LEVEL_CAP = process.argv[3] || 15;
 const redesignValues = {design: 50, frontend: 10, backend: 40};
 
 let data;

@@ -1,0 +1,38 @@
+---
+applications:
+- name: sites-upgrade-jenya
+  no-route: true
+  instances: 1
+  memory: 256M
+  disk_quota: 256M
+  health-check-type: process
+  timeout: 60
+  command: node executors/upgradeSites.js 0 15
+  buildpack: https://github.com/cloudfoundry/nodejs-buildpack
+- name: sites-upgrade-komarik
+  no-route: true
+  instances: 1
+  memory: 256M
+  disk_quota: 256M
+  health-check-type: process
+  timeout: 60
+  command: node executors/upgradeSites.js 2 15
+  buildpack: https://github.com/cloudfoundry/nodejs-buildpack
+- name: sites-upgrade-rider
+  no-route: true
+  instances: 1
+  memory: 256M
+  disk_quota: 256M
+  health-check-type: process
+  timeout: 60
+  command: node executors/upgradeSites.js 3 15
+  buildpack: https://github.com/cloudfoundry/nodejs-buildpack
+- name: sites-upgrade-pineapple
+  no-route: true
+  instances: 1
+  memory: 256M
+  disk_quota: 256M
+  health-check-type: process
+  timeout: 60
+  command: node executors/upgradeSites.js 4 15
+  buildpack: https://github.com/cloudfoundry/nodejs-buildpack
