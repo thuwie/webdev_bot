@@ -18,18 +18,30 @@ async function publishContent(config, userData) {
 
   for (const site of sitesWithoutBuffButWithStoredContent) {
     const lastContent = site.content.find(content => content.status === 2);
-    let interestedContent = site.content.find(content => content.status === 1);
+    // lets take any first
+    let contentToPublish = site.content.find(content => content.status === 1);
 
     if (lastContent) {
-      const goodPotentialContent = site.content
+      // then lets try to find a content with "no duplications" and override contentToPublish if it exists
+      const normalContent = site.content
         .find(content => content.status === 1 && content.contenttypeId !== lastContent.contenttypeId);
 
-      if (goodPotentialContent) {
-        interestedContent = goodPotentialContent;
+      if (normalContent) {
+        contentToPublish = normalContent;
+      }
+
+      // then find ideal content (with boost from comments)
+      const interstedPotentialContentType = userData.siteOptions.content.relation[site.sitetypeId].find(r => r.contenttypeId === lastContent.contenttypeId);
+
+      if (interstedPotentialContentType) {
+        const intrestedContent = site.content.find(c => c.status === 1 && c.contenttypeId === interstedPotentialContentType.contenttypeIdBoost);
+        if (intrestedContent) {
+          contentToPublish = intrestedContent;
+        }
       }
     }
 
-    await RequestsExecutor.publishContent(config, site, interestedContent.id);
+    await RequestsExecutor.publishContent(config, site, contentToPublish.id);
   }
 }
 
