@@ -4,17 +4,18 @@ const utils = require('../utils/utils');
 const logger = require('../utils/logger');
 
 const RequestsExecutor = require('../bot_tasks/RequestsExecutor');
-const {Config} = require('../bot_tasks/Config');
-const {constConfigs} = require('../config.json');
+const { Config } = require('../bot_tasks/Config');
+const { constConfigs } = require('../config.json');
 
-const config = new Config(constConfigs[process.argv[2] || 3]);
+const configId = process.env.CONFIG_ID || process.argv[2] || 3;
+const config = new Config(constConfigs[configId]);
 
 class Emitter extends EventEmitter {
 }
 const emitter = new Emitter();
 
-const LEVEL_CAP = process.argv[3] || 15;
-const redesignValues = {design: 50, frontend: 10, backend: 40};
+const LEVEL_CAP = process.env.LEVEL_CAP || process.argv[3] || 15;
+const redesignValues = { design: 50, frontend: 10, backend: 40 };
 
 let data;
 let sites;
@@ -101,9 +102,9 @@ async function publishVerison(siteToDelete) {
 
 async function errorHandler(error) {
   logger.log(error, 'ERROR');
-  logger.log(`[${config.username}]: Exp farm cycle broken. Rest for the 10 seconds.`);
+  logger.log(`[${config.username}]: Exp upgrade sytes cycle broken. Rest for the 10 seconds.`);
   if (site) {
-    await deleteSite(site);
+    // await deleteSite(site);
   }
   await utils.sleep(5000);
   run();
