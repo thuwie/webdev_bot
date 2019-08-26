@@ -55,6 +55,16 @@ function filterContentMakers(workers) {
     });
 }
 
+function doesMakeSenseToRepublish(lastContent, content) {
+  if (content.duration <= lastContent.duration) {
+    return true;
+  }
+  const finishTimeForCurrentContent = new Date(lastContent.ts * 1000 + lastContent.duration * 1000);
+
+  // if current content expires in 15 minutes or less - replace it with a new one even if it lasts longer
+  return finishTimeForCurrentContent < new Date(Date.now() + 15 * 60 * 1000);
+}
+
 /**
  *
  * @param {Config} config
@@ -103,6 +113,34 @@ async function workBitches(config, userData) {
           for (const longContentItem of longDurationContents) {
             await RequestsExecutor.deleteContentItem(config, site, longContentItem);
             deletedCount += 1;
+          }
+        }
+
+        if (config.useSuperSmartContent && site.level <= 25 && site.sitetypeId === 2) {
+          const allRestContent = site.content
+            .filter(content => content.status === 1 && (content.contenttypeId !== 3 && content.contenttypeId !== 6));
+
+          const seenContentTypes = [];
+          let lastContent = site.content.find(content => content.status === 2);
+          for (const content of allRestContent) {
+            if (seenContentTypes.some(c => c.contenttypeId === content.contenttypeId)) {
+              if (lastContent) {
+                const interestedPotentialContentType = userData.siteOptions.content.relation[site.sitetypeId]
+                  .find(r => r.contenttypeId === lastContent.contenttypeId);
+                if (interestedPotentialContentType && (interestedPotentialContentType.contenttypeIdBoost === content.contenttypeId)
+                    && doesMakeSenseToRepublish(lastContent, content)) {
+                  lastContent = content;
+                  await RequestsExecutor.publishContent(config, site, content.id);
+                } else {
+                  await RequestsExecutor.deleteContentItem(config, site, content);
+                }
+              } else {
+                await RequestsExecutor.publishContent(config, site, content.id);
+              }
+              deletedCount += 1;
+            } else {
+              seenContentTypes.push(content);
+            }
           }
         }
 

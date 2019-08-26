@@ -3,6 +3,7 @@ const RequestsExecutor = require('./RequestsExecutor');
 const BookkeepingService = require('./BookkeepingService');
 const PublishingService = require('./PublishingService');
 const WorkersManagementService = require('./WorkersManagementService');
+const DailyBonusService = require('./DailyBonusService');
 const AdsService = require('./AdsService');
 const { Config } = require('./Config');
 
@@ -37,6 +38,11 @@ class CFRunner {
       logger.log(`[${this.config.username}]: Error in refresh: ${error && error.message ? error.message : error}`);
     }
     try {
+      await DailyBonusService.getDailyBonus(this.config, this.body);
+    } catch (error) {
+      logger.log(`[${this.config.username}]: Failed to get daily bonus: ${error && error.message ? error.message : error}`);
+    }
+    try {
       await PublishingService.publishContent(this.config, this.body);
     } catch (error) {
       logger.log(`[${this.config.username}]: Error in publish content: ${error && error.message ? error.message : error}`);
@@ -52,6 +58,8 @@ class CFRunner {
       logger.log(`[${this.config.username}]: Error in publish versions: ${error && error.message ? error.message : error}`);
     }
     try {
+      // need fresh content here
+      await this.refresh();
       await WorkersManagementService.workBitches(this.config, this.body);
     } catch (error) {
       logger.log(`[${this.config.username}]: Error in work bitches: ${error && error.message ? error.message : error}`);
@@ -83,9 +91,9 @@ class CFRunner {
 }
 
 // const { constConfigs } = require('../config.json');
-
+//
 // const config = constConfigs[0];
-
+//
 // new CFRunner(config).runTask();
 
 module.exports = {

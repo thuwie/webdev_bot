@@ -13,7 +13,7 @@ async function handleAdBanners(config, userData) {
 
     const bannersToRemove = site.ad
       // importunity (=== annoyance) - 12 (green), 41 (yellow), 100 (red)
-      .filter(ad => tooOldBanner(site, ad, 2.2) || (ad.adthemeId !== site.sitethemeId) || ad.importunity !== 41);
+      .filter(ad => tooOldBanner(site, ad, 2.35) || (ad.adthemeId !== site.sitethemeId) || ad.importunity !== 41);
 
     for (const banner of bannersToRemove) {
       await RequestsExecutor.deleteAd(config, site, banner);

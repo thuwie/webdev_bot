@@ -134,7 +134,7 @@ module.exports = {
     return executeRequest(config, executePostAndSleep.bind(this, config, url),
       `[${config.username}]: failed to send worker ${worker.name} to vacation`);
   },
-  
+
   async postSiteLinkUrl(config, targetSideId, postingSiteId, ts = utils.getTs()) {
     const url =`${config.url}/links/${config.userId}/${targetSideId}/${postingSiteId}/1?access_token=${config.accessToken}&connectionId=${config.connId}&ts=${ts}`;
     return executeRequest(config, executePostAndSleep.bind(this, config, url),
@@ -210,7 +210,7 @@ module.exports = {
     logger.log(`[${config.username}]: Redesign a site [${site.domain}]`);
     return executeRequest(config, executePostAndSleep.bind(this, config, url, designProps));
   },
-  
+
   async sendMessage(config, text, to = '0', type = 1, ts = utils.getTs()) {
     const url = `${config.url}/msg/${config.userId}/send?access_token=${config.accessToken}&connectionId=${config.connId}&ts=${ts}`;
     const requestBody = {
@@ -221,4 +221,18 @@ module.exports = {
     logger.log(`[${config.username}]: Sending a message ${text}`);
     return executeRequest(config, executePostAndSleep.bind(this, config, url, requestBody));
   },
+
+  async getDailyBonus(config, ts = utils.getTs()) {
+    const url = `${config.url}/users/getDailyBonus/${config.userId}?access_token=${config.accessToken}&connectionId=${config.connId}&ts=${ts}`;
+    logger.log(`[${config.username}]: Trying to get daily bonus`);
+
+    try {
+      await axios.post(url);
+    } catch (error) {
+      const responseStatus = (error && error.response && error.response.message) ? error.response.message : 'error';
+      logger.log(`[${config.username}]: Error in getting daily bonus: ${responseStatus}`);
+      throw error;
+    }
+  },
+
 };

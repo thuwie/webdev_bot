@@ -11,6 +11,7 @@ class Config {
     this.connId = config.connId;
     this.deleteOldAd = config.deleteOldAd;
     this.deleteLongContent = config.deleteLongContent;
+    this.useSuperSmartContent = config.useSuperSmartContent;
 
     this.socketUrl = config.socketUrl;
     this.socketLogin = config.socketLogin;

@@ -1,11 +1,15 @@
 const utils = require('../utils/utils');
 const logger = require('../utils/logger');
 const RequestsExecutor = require('../bot_tasks/RequestsExecutor');
-const {Config} = require('../bot_tasks/Config');
+const { Config } = require('../bot_tasks/Config');
+const { constConfigs } = require('../config.json');
 
-const {constConfigs} = require('../config.json');
 const config = new Config(constConfigs[process.argv[2] || 3]);
 const siteId = process.argv[3];
+
+let data;
+let sites;
+
 // CONFIG id then SITE id to publish on
 async function refreshSiteData() {
   const response = await RequestsExecutor.auth(config);
@@ -18,9 +22,6 @@ async function refreshSiteData() {
   return false;
 }
 
-
-let data;
-let sites;
 
 async function run() {
   try {

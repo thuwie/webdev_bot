@@ -19,7 +19,7 @@ let socketConnection;
 let site;
 let publishTimestamp = utils.getTs();
 let isLvlUpInProcess = false;
-const expGeneratorSiteName = `exp-${config.hiddenName}.free`;
+const expGeneratorSiteName = `exp-o${config.hiddenName}.free`;
 // 1. create site
 // 2. redesign
 // 3. wait for the socket to emit
@@ -135,7 +135,7 @@ async function createSite() {
     site = response.data;
     data.sites.push(site);
     await RequestsExecutor.paySite(config, site, 'domains');
-    return site.domain;    
+    return site.domain;
   } catch (error) {
     errorHandler(error);
   }

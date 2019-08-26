@@ -65,7 +65,7 @@ async function runTasksEndless() {
       await runner.runTask();
       await utils.sleep(3000);
     }
-    await utils.sleep(180000);
+    await utils.sleep(30000);
   }
 }
 
