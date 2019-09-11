@@ -1,0 +1,62 @@
+---
+applications:
+- name: sites-upgrade-jenya
+  no-route: true
+  instances: 1
+  memory: 256M
+  disk_quota: 256M
+  health-check-type: process
+  timeout: 60
+  command: node executors/upgradeSites.js
+  buildpack: https://github.com/cloudfoundry/nodejs-buildpack
+  env:
+    LEVEL_CAP: 5
+    CONFIG_ID: 0
+- name: sites-upgrade-thuwie
+  no-route: true
+  instances: 1
+  memory: 256M
+  disk_quota: 256M
+  health-check-type: process
+  timeout: 60
+  command: node executors/upgradeSites.js
+  buildpack: https://github.com/cloudfoundry/nodejs-buildpack
+  env:
+    LEVEL_CAP: 20
+    CONFIG_ID: 1
+- name: sites-upgrade-komarik
+  no-route: true
+  instances: 1
+  memory: 256M
+  disk_quota: 256M
+  health-check-type: process
+  timeout: 60
+  command: node executors/upgradeSites.js
+  buildpack: https://github.com/cloudfoundry/nodejs-buildpack
+  env:
+    LEVEL_CAP: 20
+    CONFIG_ID: 2
+- name: sites-upgrade-rider
+  no-route: true
+  instances: 1
+  memory: 256M
+  disk_quota: 256M
+  health-check-type: process
+  timeout: 60
+  command: node executors/upgradeSites.js
+  buildpack: https://github.com/cloudfoundry/nodejs-buildpack
+  env:
+    LEVEL_CAP: 15
+    CONFIG_ID: 3
+- name: sites-upgrade-pineapple
+  no-route: true
+  instances: 1
+  memory: 256M
+  disk_quota: 256M
+  health-check-type: process
+  timeout: 60
+  command: node executors/upgradeSites.js
+  buildpack: https://github.com/cloudfoundry/nodejs-buildpack
+  env:
+    LEVEL_CAP: 20
+    CONFIG_ID: 4

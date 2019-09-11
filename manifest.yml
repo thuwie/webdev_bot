@@ -1,9 +1,10 @@
 ---
 applications:
 - name: wtbot
+  no-route: true
   instances: 1
-  memory: 1G
-  disk_quota: 1G
+  memory: 256M
+  disk_quota: 256M
   health-check-type: process
   timeout: 60
   command: node server.js

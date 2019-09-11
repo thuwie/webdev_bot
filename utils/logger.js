@@ -2,10 +2,13 @@ const moment = require('moment');
 
 module.exports = {
   log: function log(message, level = 'INFO') {
-    const time = moment()
-      .format('HH:mm:ss');
+    const time = moment().format('HH:mm:ss');
 
-    console.log(`[${time}] - ${level} - ${message}`);
+    if (level === 'ERROR') {
+      console.trace(`[${time}] - ${level} - ${message}`);
+    } else {
+      console.log(`[${time}] - ${level} - ${message}`);
+    }
   },
 };
 

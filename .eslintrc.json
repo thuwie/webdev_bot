@@ -13,9 +13,13 @@
         "ecmaVersion": 2018
     },
     "rules": {
-        "max-len": [2, 120],
+        "max-len": [2, 180],
         "no-await-in-loop": "off",
         "no-console": "off",
-        "no-continue": "off"
+        "no-continue": "off",
+        "no-prototype-builtins": "off",
+        "no-restricted-syntax": "off",
+        "class-methods-use-this": "off",
+        "linebreak-style": "off"
     }
 }
